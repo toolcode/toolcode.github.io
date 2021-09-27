@@ -20,10 +20,11 @@
     var height = parseFloat(document.getElementById("y").value);
     var y = weight /( height*height);
 
-        document.getElementById("demo").innerHTML = "你的bmi是"+ y;
+        document.getElementById("result").innerHTML = "你的bmi是"+ y;
     }
    </script>
 
     <script src="myjs.js"></script>
     <button type=button onclick="f()">测试输入</button>
+    <p id="result"></p>
 </html>
