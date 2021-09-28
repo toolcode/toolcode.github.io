@@ -21,14 +21,13 @@
         }
 
         button {
-            position: absolute;
+        position: absolute;
             left: 45%;
             background-color: orange;
             border-color: rgb(255, 255, 255);
-            padding: 30px;
             text-align: center;
-            top: 70%;
             font-size: 40px;
+
         }
 
         button:hover {
@@ -42,11 +41,8 @@
         }
 
         #result {
-            position: absolute;
-            top: 80%;
-            left: 10%;
-            padding:60px;
-            font-size: 60px;
+           
+            font-size: 30px;
         }
         label{
             font-size: 30px;
@@ -67,6 +63,15 @@
         <br>
         <label for="height">身高（单位是米)</label>
         <input id="height" type="number">
+        <br>
+        <button type=button onclick="getbmi()">输入</button>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <div id="result"> </div>
     </div>
 
 
@@ -112,8 +117,7 @@
         }
     </script>
     
-        <button type=button onclick="getbmi()">输入</button>
-        <div id="result"> </div>
+       
    
    
 
