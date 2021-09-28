@@ -1,27 +1,117 @@
 <html>
+
 <head>
     <meta charset="utf-8">
-    <title>test your bmi</title>
-</head>
-<body bgcolor="orange">
-    <h1>calculate your bmi</h1>
-    <p>这个网页就是为了计算你的bmi，看你到底胖不胖</p>
-    <br>
-    你的体重:<br>
-    <input id="x" type="number" name="weight">
-    <br>
-    你的身高:<br>
-    <input id="y" type="number" name="height">
-    <script>
-    function f()
-    {
-    var weight = parseFloat(document.getElementById("x").value);
-    var height = parseFloat(document.getElementById("y").value);
-    var y = weight /( height*height);
+    <title>算你的体质指数</title>
+    <style>
+        h1 {
+            text-align: center;
+        }
 
-        document.getElementById("result").innerHTML = "你的bmi是"+ y;
-    }
-   </script>
-    <button type=button onclick="f()">测试输入</button>
-    <p id="result"></p>
+        h2 {
+            text-align: center;
+        }
+
+        #inputs {
+            position: absolute;
+            left: 45%;
+            border-color: aliceblue;
+
+        }
+
+        button {
+            position: absolute;
+            left: 45%;
+            background-color: orange;
+            border-color: rgb(255, 255, 255);
+            padding: 30px;
+            text-align: center;
+            top: 40%;
+            font-size: 40px;
+        }
+
+        button:hover {
+            background-color: rgb(233, 151, 0);
+            padding: 35px;
+        }
+
+        body {
+            background-color: orange;
+
+        }
+
+        #result {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            padding:60px;
+            font-size: 60px;
+        }
+        label{
+            font-size: 30px;
+        }
+        input{
+            padding: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>算你的bmi</h1>
+    <h2>这个网页可以计算你的体质指数（bmi），看看你是胖还是瘦</h2>
+    <br>
+    <div id="inputs">
+        <label for="weight">体重（单位是千克）</label>
+        <input id="weight" type="number">
+        <br>
+        <label for="height">身高（单位是米)</label>
+        <input id="height" type="number">
+    </div>
+
+
+    <script>
+        function getbmi() {
+            var weight = parseFloat(document.getElementById("weight").value);
+            var height = parseFloat(document.getElementById("height").value);
+            var bmi = weight / (height * height);
+            if(height>100)
+            {
+                document.getElementById("result").innerHTML="单位是米！不是厘米！";
+            }
+           else if(bmi<18.5)
+            {
+                document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你的体重过低";
+            }
+           else if
+           ( 18.5<=bmi&&bmi<25)
+           {
+            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你的体重是正常的";
+           }
+           else if
+           (25<=bmi&&bmi<30)
+           {
+            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你超重了";
+           }
+           else if
+           (bmi<=30)
+           {
+            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是一级肥胖";
+           }
+           else if
+           (30<bmi&&bmi<=35)
+           {
+            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是二级肥胖";
+           }
+           else if
+           (bmi>=40)
+           {
+            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是三级肥胖";
+           }
+
+        }
+    </script>
+    <button type=button onclick="getbmi()">输入</button>
+    <div id="result"> </div>
+</body>
+
 </html>
