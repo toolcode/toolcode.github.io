@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<title>cookiestorecord</title>
+<html>
+
+<head>
+<meta charset="UTF-8">
+</head>
+
+<body>
+    <p>  这是一个记事本 </p>
+    <input lable="键入你要说的话"id='myinput' type="text">
+    <button onclick="toinput()">  保存</button>
+    <div id="display"></div>
+</body>
+
+
+</html>
+<script>
+function  toinput()
+{
+   var a= document.getElementById("myinput").value;
+    document.getElementById("display").innerHTML=a;
+document.cookie=a;
+}
+
+b=document.cookie;
+document.getElementById("display").innerHTML=b;
+</script>
