@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>markdownnote</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <style>
+        body {
+            background-color: antiquewhite;
+
+        }
+
+        .sidebar {
+            position: absolute;
+            background-color: antiquewhite;
+            padding: 20px;
+            cursor: pointer;
+            overflow: scroll;
+            height: 500px;
+
+        }
+
+        .sidebar button {
+            border-radius: 30px;
+            border-width: 0;
+            background-color: aquamarine;
+            font-size: larger;
+            padding: 5px;
+
+        }
+
+        .sidebar button:hover {
+            background-color: rgb(130, 130, 9);
+        }
+
+        .sidebar li {
+            list-style-type: none;
+            background-color: aquamarine;
+            font-size: larger;
+            border-width: 5px;
+            border-color: aliceblue;
+
+        }
+
+        .sidebar ul {
+            padding-left: 0px;
+            padding: 2px;
+        }
+
+        #maintab {
+            margin-left: 200px;
+            white-space: nowrap;
+            height: 500px;
+            width: 1000px;
+            padding-top: 0px;
+            white-space: nowrap;
+            padding: auto;
+
+        }
+
+        #maintab div {
+            float: left;
+            overflow: scroll;
+            box-sizing: border-box;
+
+        }
+
+        #edit {
+            resize: none;
+            width: 500px;
+            height: 500px;
+
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        #preview {
+
+            background-color: azure;
+            width: 460px;
+            height: 500px;
+            margin-left: 30px;
+
+
+        }
+
+        #empty {
+            margin-left: 200px;
+
+        }
+        input{
+            position: relative;
+            left:30px;
+            border-width: 0;
+            background-color: azure;
+            font-size: 20px;
+            border-radius: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app1">
+        <div class="sidebar">
+            <button v-on:click="addNote">添加笔记</button>
+            <button @click="deleteselected()">删除</button>
+            <ul id="thelists">
+                <li v-for="(note,index) in notes" @click="selectNote(note,index)">
+                    {{note.title}}
+                </li>
+            </ul>
+        </div>
+        <div v-if="selectedNote" id="maintab">
+            <input v-model="selectedNote.title" title="点击更改标题">
+            <div id="edit">
+               
+                <textarea v-model="selectedNote.content" id="edit"> 
+                    </textarea>
+            </div>
+            
+            <div v-html="thehtml" id="preview">
+               
+            </div>
+        </div>
+        <div v-else id="empty">
+            点击左边列表中的一个笔记，然后开始编辑,如果没有就按添加按钮添加一个
+        </div>
+
+    </div>
+    </aside>
+    <script>
+        var app = new Vue({
+            el: "#app1",
+            data() {
+                return {
+                    notes: JSON.parse(localStorage.getItem("notes")) || [],
+                    selectedId: null,
+                    lastSeleIndex: null,
+                }
+
+            },
+            computed: {
+                thehtml: function () {
+                  
+                    return marked.parse(this.selectedNote.content);
+                },
+                selectedNote: function () {
+                    return this.notes.find(note => note.id === this.selectedId)
+                }
+
+            },
+            methods: {
+                savenote(val) {
+                    console.log(val);
+                    localStorage.setItem("content", val);
+                },
+                addNote() {
+                    //创造一个对象，然后把这个对象加到note列表
+                    const time = Date.now()
+                    const note = {
+                        id: String(time),
+                        title: "新笔记" + (this.notes.length + 1),
+                        content: "左边的框用来编辑markdown，右边的框用来进行预览",
+                        created: time,
+                        favorite: false,
+                    }
+
+                    this.notes.push(note);
+                },
+                selectNote(note, index) {
+                    this.selectedId = note.id;
+                    console.log(note.id);
+                    console.log(index);
+                    document.getElementById("thelists").children[index].style.backgroundColor = "#83cbac";
+                    this.lastSeleIndex = index
+                    for (var index1 = 0; index1 < document.getElementById("thelists").children.length; index1++) {
+                        if (index1 == index) {
+                            continue
+                        }
+                        else {
+                            document.getElementById("thelists").children[index1].style.backgroundColor = "aquamarine"
+                        }
+                    }
+                },
+                saveNotes() {
+                    localStorage.setItem("notes", JSON.stringify(this.notes));
+                    console.log("Notes saved!", new Date());
+                },
+                saveselectedId() {
+                    localStorage.setItem("selectedId", this.selectedId);
+                },
+                deleteselected() {
+                    this.notes = this.notes.filter(note => note.id != this.selectedId);
+                    for (var index1 = 0; index1 < document.getElementById("thelists").children.length; index1++) {
+
+                        document.getElementById("thelists").children[index1].style.backgroundColor = "aquamarine"
+
+                    }
+                }
+            },
+            watch: {
+                notes: {
+                    handler: "saveNotes",
+                    deep: true
+                },
+                selectedId: {
+                    handler: "saveselectedId"
+                }
+            },
+            created() {
+                this.selectedId = localStorage.getItem("selectedId")
+                console.log("created")
+            },
+        })
+    </script>
+</body>
+
+</html>
