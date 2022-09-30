@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>
+</head>
+<style>
+    #chessboard {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        grid-gap: 1px;
+        margin-left: 35%;
+        width: fit-content;
+        box-sizing: border-box;
+        border: solid 5px green;
+    }
+
+    .chess {
+        background-color: rgb(241, 161, 56);
+        border-color: rgb(26, 126, 126);
+        border-width: 2px;
+        width: 100px;
+        height: 100px;
+        text-align: center;
+        font-size: larger;
+        margin: 0px
+    }
+    #tip{
+        text-align: center;
+        font-size: 90px;
+        font-weight: 900;
+    }
+</style>
+<html>
+
+<body>
+    <div id="app">
+        <div id="tip">{{tips}}</div>
+        <div id="chessboard">
+            <div v-for="chess in list" class="chess" @click="play(chess.id)">
+            </div>
+        </div>
+    </div>
+  
+</body>
+<script>
+    class thechess {
+        constructor(id) {
+            this.id = id;
+            this.color = 'orange'
+
+        }
+    }
+    chess = new Vue({
+        el: "#app",
+        data() {
+            return {
+                list: [],
+                turn: 0,
+                tips: "左边选手下棋"
+            }
+
+        },
+        created() {
+            this.initchess()
+        },
+        methods: {
+            judge(index){
+               thejudge=[[0,3,6],[1,4,7],[2,5,8]]
+                //最后一次下的棋的位置的颜色
+                thecolor=this.list[index].color
+
+                for(index1=0;index1<3;index1++){
+                    for(index2=0;index2<3;index2++){
+                        if(thejudge[index1][index2]==index){
+                            // indexposition.push(index1)
+                            // indexposition.push(index2)
+                            indexposition=[index1,index2]
+                            columnIndex=index1
+                            rawIndex=index2
+
+
+                        }
+                    }
+                }
+                //这就是位置
+                console.log(columnIndex,rawIndex)
+                //判断同列的是否成立
+                let count1=0
+                for (x of thejudge[columnIndex]){
+                if (this.list[x].color==thecolor){
+                    count1+=1
+                    if (count1==3){
+                        alert("胜负已定")
+                    }
+                }
+                }
+                console.log("这一列有"+count1)
+                 //判断同行是否成立
+                 let count2=0
+                 for(index3=0;index3<3;index3++){
+                    let y=thejudge[index3][rawIndex]
+                    if (this.list[y].color==thecolor){
+                    count2+=1
+                    if (count2==3){
+                        alert("胜负已定")
+                    }
+                }
+                //如果属于斜边，进行判断两个斜边是否有成立
+                 }
+                 if([0,4,8].indexOf(index)!=-1){
+                    console.log("这要判断两条斜边")
+                    if((this.list[0].color==thecolor) && (this.list[4].color==thecolor)){
+                        if(this.list[8].color==thecolor){
+                            alert("胜负已定")
+                        }
+                    }
+                }
+
+               ///////////////////另外一个斜边
+               if([2,4,6].indexOf(index)!=-1){
+                    console.log("这要判断两条斜边")
+                    if((this.list[2].color==thecolor) && (this.list[4].color==thecolor)){
+                        if(this.list[6].color==thecolor){
+                            alert("胜负已定")
+                        }
+                    }
+                }
+
+
+
+                },
+               
+            play(index) {
+                console.log('played', index)
+                //先把这个棋子变成白色
+                color = document.getElementById("chessboard").children[index].style.backgroundColor
+                if (color == "black" || color == "red") {
+                    if (this.turn == 0) {
+                    this.tips = "左边选手下棋"
+                    this.turn=1
+                }
+                else {
+                    this.tips = "右边选手下棋"
+                    this.turn=0
+                }
+                }
+                if (this.turn==0 && this.list[index].color!="red"){
+                    document.getElementById("chessboard").children[index].style.backgroundColor = "black";
+                    this.list[index].color="black"
+
+                }
+              else if(this.list[index].color!="black")
+              {
+                document.getElementById("chessboard").children[index].style.backgroundColor = "red";
+                this.list[index].color="red"
+              }
+
+              this.judge(index)
+      
+                if (this.turn == 0) {
+                    this.tips = "右边选手下棋"
+                    this.turn=1
+                }
+                else {
+                    this.tips = "左边选手下棋"
+                    this.turn=0
+                }
+            },
+            initchess() {
+                //init the chess board
+                for (index = 0; index < 9; index++) {
+                    mychess = new thechess(index)
+                    this.list.push(mychess)
+                }
+            }
+        },
+    })
+</script>
+
+</html>
