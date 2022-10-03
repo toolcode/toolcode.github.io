@@ -1,54 +1,80 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport"  content="width=device-width,initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
     <title>算你的体质指数</title>
     <style>
-        h1 {
+        h1,
+        h2 {
+            color: rgb(0, 0, 0);
+            width: 100%;
             text-align: center;
         }
 
-        h2 {
-            text-align: center;
+        input {
+            width: 200px;
+            display: block;
+            margin-bottom: 10px;
+            padding: 5px;
+            font-size: larger;
+            border-radius: 10px;
+            border-width: 0px;
         }
 
         #inputs {
-            position: absolute;
-            left: 45%;
-            border-color: aliceblue;
-
-        }
-
-        button {
-        position: absolute;
-            left: 45%;
-            background-color: orange;
-            border-color: rgb(255, 255, 255);
-            text-align: center;
-            font-size: 40px;
-
-        }
-
-        button:hover {
-            background-color: rgb(233, 151, 0);
-            padding: 35px;
+            width: fit-content;
+            margin: 0 auto;
         }
 
         body {
             background-color: orange;
-
         }
 
-        #result {
-           
-            font-size: 30px;
+        button {
+            border-radius: 10px;
+            border-width: 0px;
+            width: 80px;
+            height: 30px;
+            transition: all 0.3s;
         }
-        label{
-            font-size: 30px;
+
+        button:hover {
+            background-color: rgb(151, 170, 134);
         }
-        input{
-            padding: 30px;
+
+        .result {
+            width: 500px;
+            word-wrap: break-word;
+            margin-left: 500px;
+            font-size: 20px;
+            font-style: italic;
+            background-color: rgb(247, 225, 147);
+            border-radius: 20px;
+            margin-bottom: 2px;
+            padding: 5px;
+        }
+
+        .list-item {
+            display: block;
+            margin-right: 10px;
+        }
+
+        .list-enter-active,
+        .list-leave-active {
+            transition: all 1s;
+        }
+
+        .list-enter,
+        .list-leave-to
+            {
+            opacity: 0;
+            /* transform: translateX(300px); */
+            transform: scale(1.6);
+             
+
+
+
         }
     </style>
 </head>
@@ -56,71 +82,79 @@
 <body>
     <h1>算你的bmi</h1>
     <h2>这个网页可以计算你的体质指数（bmi），看看你是胖还是瘦</h2>
-    <br>
-    <div id="inputs">
-        <label for="weight">体重（单位是千克）</label>
-        <input id="weight" type="number">
-        <br>
-        <label for="height">身高（单位是米)</label>
-        <input id="height" type="number">
-        <br>
-        <button type=button onclick="getbmi()">输入</button>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <div id="result"> </div>
+    <div id="bmiapp">
+        <div id="inputs">
+            <div>姓名：</div>
+            <input id="name" type="text" placeholder="姓名">
+            <div>体重：</div>
+            <input id="weight" type="number" placeholder="体重（kg）">
+            <div>身高：</div>
+            <input id="height" type="number" placeholder="身高（m）">
+            <button type=button @click="getbmi">确定</button>
+            <button @click="results=[]">清除结果</button>
+        </div>
+        <transition-group name="list" tag="p" >
+            <div class="result" v-for="result in results" v-bind:key="result[1]">
+                {{result[0]}}
+            </div>
+           
+
+        </transition-group>
+        
+
+
     </div>
 
 
+
     <script>
-        function getbmi() {
-            var weight = parseFloat(document.getElementById("weight").value);
-            var height = parseFloat(document.getElementById("height").value);
-            var bmi = weight / (height * height);
-            if(height>100)
-            {
-                document.getElementById("result").innerHTML="单位是米！不是厘米！";
-            }
-           else if(bmi<18.5)
-            {
-                document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你的体重过低";
-            }
-           else if
-           ( 18.5<=bmi&&bmi<25)
-           {
-            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你的体重是正常的";
-           }
-           else if
-           (25<=bmi&&bmi<30)
-           {
-            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你超重了";
-           }
-           else if
-           (bmi<=30)
-           {
-            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是一级肥胖";
-           }
-           else if
-           (30<bmi&&bmi<=35)
-           {
-            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是二级肥胖";
-           }
-           else if
-           (bmi>=40)
-           {
-            document.getElementById("result").innerHTML="你的bmi是"+bmi+"，你是三级肥胖";
-           }
+        bmiapp = new Vue({
+            el: "#bmiapp",
+            data: function () {
+                return {
+                    results: []
+                }
+            },
+            methods: {
+                getbmi() {
+                    name = document.getElementById("name").value
+                    var weight = parseFloat(document.getElementById("weight").value);
+                    var height = parseFloat(document.getElementById("height").value);
+                    var bmi = weight / (height * height);
+                    if (height > 100) {
+                        result = "单位是米！不是厘米！";
+                    }
+                    else if (bmi < 18.5) {
+                        result = "你的bmi是" + bmi + "，你的体重过低";
+                    }
+                    else if
+                        (18.5 <= bmi && bmi < 25) {
+                        result = "你的bmi是" + bmi + "，你的体重是正常的";
+                    }
+                    else if
+                        (25 <= bmi && bmi < 30) {
+                        result = "你的bmi是" + bmi + "，你超重了";
+                    }
+                    else if
+                        (bmi <= 30) {
+                        result = "你的bmi是" + bmi + "，你是一级肥胖";
+                    }
+                    else if
+                        (30 < bmi && bmi <= 35) {
+                        result = "你的bmi是" + bmi + "，你是二级肥胖";
+                    }
+                    else if
+                        (bmi >= 40) {
+                        result = "你的bmi是" + bmi + "，你是三级肥胖";
+                    }
+                    var d = new Date();
+                    this.results.push([name + "," + result,String(d)])
 
-        }
+                }
+            }
+
+        })
     </script>
-    
-       
-   
-   
-
 </body>
 
 </html>
