@@ -1,40 +1,59 @@
 <!DOCTYPE html>
-<html style="background-color: bisque;">
-    <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>一些习作网页</title>
+<head>
+     <meta name="viewport"  content="width=device-width,initial-scale=1.0,user-scalable=no">
+     <style>
+        body{
+            background-color: rgb(255, 170, 0);
+        }
+        #title{
+            width: 100%;
+            text-align: center;
+            font-weight: 900;
+            font-size: 50px;
+        }
+        #navigation{
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            text-align:center;
+        }
+        #navigation a{
+            width: 100px;
+            height: 100px;
+            background-color: rgb(239, 211, 174);
+            margin: 10px;
+            box-sizing: border-box;
+            padding: 20px;
+            text-decoration: none;
+            color:black;
+            transition:all 0.2s;
+            font-size: large;
+            border-radius: 15px;
+        }
+        a:hover{
+            transform: scale(1.1);
+            box-shadow: 0px 0px 10px 1px;
+            color:aqua;
+
+        }
+   
+     </style>
 </head>
-    <h1 style="text-align: center;">一些习作网页</h1>
-    <div style="position: relative;left:50%">
-        <a href="https://toolcode.github.io/bmi.html">
-            <div style="background-color: #ebce4e;
-            width: 200px;
-            height: 200px;
-            font-size: 50px;
-            margin:50px;"          
-            >
-                1,bmi
+
+
+<body>
+    <div id="index">
+        <div id="content">
+            <div id="title"> 这是我的一些前端习作</div>
+            <div id="navigation">
+                <a href="https://toolcode.github.io/bmi.html">测试bmi</a>
+                <a href="https://toolcode.github.io/years.html">历史测试</a>
+                <a href="https://toolcode.github.io/markdownnotebook.html">笔记本</a>
+                <a href="https://toolcode.github.io/chess.html">井字棋</a>
+
             </div>
-        </a>
-        <a href="https://toolcode.github.io/years.html">
-            <div style="background-color: rgb(139, 185, 246);
-            width: 200px;
-            height: 200px;
-            font-size: 50px;
-            margin: 50px;">
-                2,years
-            </div>
-        </a>
-        <a href="https://toolcode.github.io/markdownnotebook.html">
-            <div style="background-color: rgb(139, 185, 246);
-            width: 200px;
-            height: 200px;
-            font-size: 50px;
-            margin: 50px;">
-                3,notebook
-            </div>
-        </a>
+        </div>
+      
     </div>
-       
-</html>
+</body>
