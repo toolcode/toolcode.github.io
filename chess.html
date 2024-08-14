@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47"></script>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <style>
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 1px;
+            margin-left: 35%;
+            width: fit-content;
+            box-sizing: border-box;
+            border: solid 5px green;
+        }
+        .chess {
+            background-color: rgb(241, 161, 56);
+            border-color: rgb(26, 126, 126);
+            border-width: 2px;
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            font-size: larger;
+            margin: 0px;
+        }
+        #tip {
+            text-align: center;
+            font-size: 90px;
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="tip">{{ tips }}</div>
+        <div id="chessboard">
+            <div v-for="chess in list" :key="chess.id" class="chess"
+                 @click="play(chess.id)" :style="{ backgroundColor: chess.color }">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ref, createApp } = Vue;
+
+        const app = createApp({
+            setup() {
+                const list = ref([]);
+                const turn = ref(0);
+                const tips = ref("左边选手下棋");
+
+                function initChess() {
+                    for (let index = 0; index < 9; index++) {
+                        list.value.push({ id: index, color: 'orange' });
+                    }
+                }
+
+                function judge(index) {
+                    const thejudge = [[0,3,6],[1,4,7],[2,5,8]];
+                    const thecolor = list.value[index].color;
+                    let [columnIndex, rowIndex] = [-1, -1];
+
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 3; j++) {
+                            if (thejudge[i][j] === index) {
+                                columnIndex = i;
+                                rowIndex = j;
+                            }
+                        }
+                    }
+
+                    let count1 = thejudge[columnIndex].filter(x => list.value[x].color === thecolor).length;
+                    if (count1 === 3) {
+                        alert("胜负已定");
+                    }
+
+                    let count2 = thejudge.map(row => row[rowIndex]).filter(x => list.value[x].color === thecolor).length;
+                    if (count2 === 3) {
+                        alert("胜负已定");
+                    }
+
+                    if ([0, 4, 8].includes(index) && [0, 4, 8].every(i => list.value[i].color === thecolor)) {
+                        alert("胜负已定");
+                    }
+
+                    if ([2, 4, 6].includes(index) && [2, 4, 6].every(i => list.value[i].color === thecolor)) {
+                        alert("胜负已定");
+                    }
+                }
+
+                function play(index) {
+                    const color = list.value[index].color;
+                    if (color === 'black' || color === 'red') {
+                        tips.value = turn.value === 0 ? "左边选手下棋" : "右边选手下棋";
+                        turn.value = 1 - turn.value;
+                    }
+                    if (turn.value === 0 && color !== 'red') {
+                        list.value[index].color = 'black';
+                    } else if (color !== 'black') {
+                        list.value[index].color = 'red';
+                    }
+                    judge(index);
+                    tips.value = turn.value === 0 ? "右边选手下棋" : "左边选手下棋";
+                    turn.value = 1 - turn.value;
+                }
+
+                initChess();
+
+                return { list, tips, play };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>

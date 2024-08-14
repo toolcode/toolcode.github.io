@@ -1,19 +1,54 @@
 <html>
-    <div class="title">
-        this is my new page
-    </div>
-    <div class="content">
-        <div>
-            this is my git page1
+    <body>
+        <div id="app">
+            <div id="content">
+                <div id="title">一些用vue3写的页面</div>
+                <div id="navigation">
+                    <a href="https://toolcode.github.io/years.html">历史测试</a>
+                    <a href="https://toolcode.github.io/chess.html">井字棋</a>
+                </div>
+            </div>
         </div>
-        <div>
-            this is my git page2
-        </div>
-        <div>
-            this is my git page3
-        </div>
-    </div>
+    </body>
 </html>
-<style>
 
-</style>
+<script>
+</script>
+<style>
+    body{
+        background-color: rgb(255, 170, 0);
+    }
+    #title{
+        width: 100%;
+        text-align: center;
+        font-weight: 900;
+        font-size: 50px;
+    }
+    #navigation{
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align:center;
+    }
+    #navigation a{
+        width: 100px;
+        height: 100px;
+        background-color: rgb(239, 211, 174);
+        margin: 10px;
+        box-sizing: border-box;
+        padding: 20px;
+        text-decoration: none;
+        color:black;
+        transition:all 0.2s;
+        font-size: large;
+        border-radius: 15px;
+    }
+    a:hover{
+        transform: scale(1.1);
+        box-shadow: 0px 0px 10px 1px;
+        color:aqua;
+
+    }
+
+ </style>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>guess</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/lib/theme-chalk/index.css">
+    <style>
+        #year {
+            font-size: 50px;
+        }
+
+        #des {
+            text-align: center;
+            font-size: larger;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #main {
+            margin: 0 auto;
+            width: 600px;
+            height: 600px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div>
+            <div>
+                <el-button @click="begin" v-if="beginif">开始计时，看看你120秒能够答对几题</el-button>
+            </div>
+            <div v-show="finalresshow">你答对了{{ correcttimes }}次</div>
+            <div id="main" v-show="show">
+                <div id="des">给你一个年份，负数代表公元前，然后你选择这个年份的正确朝代，</div>
+                <div>正确概率：{{ correcttimes }}/{{ judgetimes }} 倒计时：{{ countdown }}</div>
+                <div>
+                    <div id="year">{{ year }}</div>
+                    <div>{{ correctAnswer }}</div>
+                    <el-radio-group v-model="answer">
+                        <el-radio v-for="choice in choices" :key="choice" :label="choice">{{ choice }}</el-radio>
+                    </el-radio-group>
+                    <br />
+                    <el-button @click="next">确定，下一个</el-button>
+                    <strong>{{ judgeresult }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        const { ElButton, ElRadioGroup, ElRadio } = ElementPlus;
+
+        createApp({
+            components: { ElButton, ElRadioGroup, ElRadio },
+            setup() {
+                const countdown = ref(120);
+                const beginif = ref(true);
+                const finalresshow = ref(false);
+                const show = ref(false);
+                const year = ref(null);
+                const choices = ref([]);
+                const correctAnswer = ref(null);
+                const answer = ref(null);
+                const judgeresult = ref("");
+                const judgetimes = ref(0);
+                const correcttimes = ref(0);
+
+                const getrandomyear = () => {
+                    year.value = Math.floor(Math.random() * 4020) - 2070;
+                };
+
+                const loadchoices = () => {
+                    choices.value = [];
+                    answer.value = null;
+                    const allChoices = [
+                        "夏朝", "商朝", "周朝", "战国", "秦朝", "西汉", "新朝", "玄汉", "东汉",
+                        "三国", "晋朝", "南北朝", "隋朝", "唐朝", "五代", "宋朝", "元朝", "明朝",
+                        "清朝", "中华民国", "中华人民共和国"
+                    ];
+
+                    const correct = getanswer(year.value);
+                    choices.value.push(correct);
+                    const nearbyChoices = allChoices.filter(choice => choice !== correct);
+                    const index = allChoices.indexOf(correct);
+                    const range = 2;
+                    const nearbyOptions = nearbyChoices.slice(
+                        Math.max(index - range, 0),
+                        Math.min(index + range + 1, nearbyChoices.length)
+                    );
+
+                    while (choices.value.length < 4) {
+                        const option = shuffleArray(nearbyOptions).shift();
+                        if (option && choices.value.indexOf(option) === -1) {
+                            choices.value.push(option);
+                        }
+                    }
+                    choices.value = shuffleArray(choices.value);
+                };
+
+
+                const shuffleArray = (array) => {
+                    let curId = array.length;
+                    while (curId) {
+                        const randId = Math.floor(Math.random() * curId);
+                        curId -= 1;
+                        [array[curId], array[randId]] = [array[randId], array[curId]];
+                    }
+                    return array;
+                };
+
+                const getanswer = (randomyear) => {
+                    if (randomyear >= -2070 && randomyear <= -1600) return "夏朝";
+                    if (randomyear >= -1601 && randomyear <= -1046) return "商朝";
+                    if (randomyear >= -1047 && randomyear <= -256) return "周朝";
+                    if (randomyear >= -257 && randomyear <= -221) return "战国";
+                    if (randomyear >= -222 && randomyear <= -206) return "秦朝";
+                    if (randomyear >= -206 && randomyear <= 8) return "西汉";
+                    if (randomyear >= 9 && randomyear <= 23) return "新朝";
+                    if (randomyear >= 24 && randomyear <= 25) return "玄汉";
+                    if (randomyear >= 26 && randomyear <= 220) return "东汉";
+                    if (randomyear >= 221 && randomyear <= 280) return "三国";
+                    if (randomyear >= 281 && randomyear <= 420) return "晋朝";
+                    if (randomyear >= 421 && randomyear <= 589) return "南北朝";
+                    if (randomyear >= 590 && randomyear <= 618) return "隋朝";
+                    if (randomyear >= 619 && randomyear <= 907) return "唐朝";
+                    if (randomyear >= 908 && randomyear <= 960) return "五代";
+                    if (randomyear >= 961 && randomyear <= 1279) return "宋朝";
+                    if (randomyear >= 1280 && randomyear <= 1368) return "元朝";
+                    if (randomyear >= 1369 && randomyear <= 1644) return "明朝";
+                    if (randomyear >= 1645 && randomyear <= 1912) return "清朝";
+                    if (randomyear >= 1913 && randomyear <= 1948) return "中华民国";
+                    return "中华人民共和国";
+                };
+
+                const judgeanswer = () => {
+                    judgetimes.value += 1;
+                    if (answer.value === getanswer(year.value)) {
+                        judgeresult.value = "对了";
+                        correcttimes.value += 1;
+                    } else {
+                        judgeresult.value = `错了， ${year.value}年，正确答案是 ${getanswer(year.value)}`;
+                    }
+                };
+
+                const next = () => {
+                    judgeanswer();
+                    getrandomyear();
+                    loadchoices();
+                };
+
+                const begin = () => {
+                    beginif.value = false;
+                    show.value = true;
+                    setTimeout(() => {
+                        finalresshow.value = true;
+                        show.value = false;
+                    }, 120000);
+                    const interval = setInterval(() => {
+                        countdown.value -= 1;
+                        if (countdown.value <= 0) {
+                            clearInterval(interval);
+                        }
+                    }, 1000);
+                };
+
+                onMounted(() => {
+                    getrandomyear();
+                    loadchoices();
+                });
+
+                return {
+                    countdown,
+                    beginif,
+                    finalresshow,
+                    show,
+                    year,
+                    choices,
+                    correctAnswer,
+                    answer,
+                    judgeresult,
+                    judgetimes,
+                    correcttimes,
+                    getrandomyear,
+                    loadchoices,
+                    shuffleArray,
+                    getanswer,
+                    judgeanswer,
+                    next,
+                    begin
+                };
+            }
+        }).use(ElementPlus).mount('#app');
+    </script>
+</body>
+
+</html>
