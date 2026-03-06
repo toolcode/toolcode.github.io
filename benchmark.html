@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电脑性能测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .test-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .test-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #00d9ff;
+        }
+
+        .test-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-running {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+            animation: pulse 1s infinite;
+        }
+
+        .status-done {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-error {
+            background: rgba(255, 82, 82, 0.2);
+            color: #ff5252;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .test-description {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .result-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00ff88;
+        }
+
+        .result-unit {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .result-details {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .score-badge {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .score-a { background: linear-gradient(135deg, #00ff88, #00d9ff); color: #1a1a2e; }
+        .score-b { background: linear-gradient(135deg, #ffdd00, #ffaa00); color: #1a1a2e; }
+        .score-c { background: linear-gradient(135deg, #ff8844, #ff5252); color: #1a1a2e; }
+        .score-d { background: linear-gradient(135deg, #ff5252, #ff0000); color: #fff; }
+
+        .start-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto;
+            padding: 16px 32px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 12px;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .overall-score {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(0, 255, 136, 0.1));
+            border-radius: 16px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .overall-score.visible {
+            display: block;
+        }
+
+        .overall-score h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .overall-value {
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .system-info {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .webgpu-not-supported {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .webgpu-not-supported h3 {
+            color: #ff5252;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            .test-card { padding: 16px; }
+            .result-value { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ 电脑性能测试</h1>
+
+        <div class="system-info" id="systemInfo">
+            正在获取系统信息...
+        </div>
+
+        <div id="webgpuWarning" style="display: none;"></div>
+
+        <div class="test-card">
+            <div class="test-header">
+                <span class="test-name">🔥 CPU 计算性能</span>
+                <span class="test-status status-pending" id="cpuStatus">待测试</span>
+            </div>
+            <p class="test-description">测试 JavaScript 算术运算和算法性能（质数计算）</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="cpuProgress"></div>
+            </div>
+            <div class="result-display">
+                <div>
+                    <span class="result-value" id="cpuResult">--</span>
+                    <span class="result-unit">ms</span>
+                </div>
+                <span class="result-details" id="cpuDetails">完成 5000000 次计算</span>
+            </div>
+        </div>
+
+        <div class="test-card">
+            <div class="test-header">
+                <span class="test-name">💾 内存读写性能</span>
+                <span class="test-status status-pending" id="memoryStatus">待测试</span>
+            </div>
+            <p class="test-description">测试内存分配、读写和垃圾回收性能</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="memoryProgress"></div>
+            </div>
+            <div class="result-display">
+                <div>
+                    <span class="result-value" id="memoryResult">--</span>
+                    <span class="result-unit">MB/s</span>
+                </div>
+                <span class="result-details" id="memoryDetails">操作 200MB 内存</span>
+            </div>
+        </div>
+
+        <div class="test-card">
+            <div class="test-header">
+                <span class="test-name">🎮 WebGPU 计算性能</span>
+                <span class="test-status status-pending" id="gpuStatus">待测试</span>
+            </div>
+            <p class="test-description">使用 GPU 进行并行计算测试（矩阵运算，与分辨率无关）</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="gpuProgress"></div>
+            </div>
+            <div class="result-display">
+                <div>
+                    <span class="result-value" id="gpuResult">--</span>
+                    <span class="result-unit">GFLOPS</span>
+                </div>
+                <span class="result-details" id="gpuDetails">固定 512x512 矩阵计算</span>
+            </div>
+        </div>
+
+        <div class="test-card">
+            <div class="test-header">
+                <span class="test-name">⚡ WebGPU 渲染性能</span>
+                <span class="test-status status-pending" id="renderStatus">待测试</span>
+            </div>
+            <p class="test-description">测试 GPU 渲染管线性能（绘制调用测试）</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="renderProgress"></div>
+            </div>
+            <div class="result-display">
+                <div>
+                    <span class="result-value" id="renderResult">--</span>
+                    <span class="result-unit">k draws/s</span>
+                </div>
+                <span class="result-details" id="renderDetails">固定 50000 次绘制调用</span>
+            </div>
+        </div>
+
+        <button class="start-btn" id="startBtn" onclick="runAllTests()">开始测试</button>
+
+        <div class="overall-score" id="overallScore">
+            <h2>综合性能得分</h2>
+            <div class="overall-value" id="overallValue">--</div>
+            <div class="score-badge" id="scoreBadge">等待测试</div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let results = {};
+        let webgpuSupported = false;
+        let device = null;
+
+        // 系统信息
+        async function getSystemInfo() {
+            const info = [];
+            info.push(`浏览器: ${navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : '其他'}`);
+
+            // 检查 WebGPU 支持
+            if (navigator.gpu) {
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (adapter) {
+                        webgpuSupported = true;
+                        const info2 = await adapter.requestInfo();
+                        info.push(`GPU: ${info2.description}`);
+                        device = await adapter.requestDevice();
+                    } else {
+                        info.push('GPU: 无可用的 GPU 适配器');
+                    }
+                } catch (e) {
+                    info.push('GPU: WebGPU 初始化失败');
+                }
+            } else {
+                info.push('GPU: 不支持 WebGPU');
+                showWebGPUWarning();
+            }
+
+            // 内存信息 (如果可用)
+            if (navigator.deviceMemory) {
+                info.push(`内存: ${navigator.deviceMemory} GB`);
+            }
+
+            // CPU 核心数
+            info.push(`CPU 核心: ${navigator.hardwareConcurrency || '未知'}`);
+
+            document.getElementById('systemInfo').innerHTML = info.join(' | ');
+        }
+
+        function showWebGPUWarning() {
+            const warning = document.getElementById('webgpuWarning');
+            warning.innerHTML = `
+                <div class="webgpu-not-supported">
+                    <h3>⚠️ WebGPU 不支持</h3>
+                    <p>您的浏览器不支持 WebGPU，无法进行 GPU 相关测试。请使用 Chrome 113+ 或 Edge 113+ 浏览器。</p>
+                </div>
+            `;
+            warning.style.display = 'block';
+        }
+
+        // CPU 测试 - 质数计算
+        async function testCPU() {
+            const status = document.getElementById('cpuStatus');
+            const progress = document.getElementById('cpuProgress');
+            const result = document.getElementById('cpuResult');
+            const details = document.getElementById('cpuDetails');
+
+            status.className = 'test-status status-running';
+            status.textContent = '测试中...';
+            progress.style.width = '0%';
+
+            const iterations = 5000000;
+            let primes = 0;
+
+            // 使用 requestIdleCallback 或 setTimeout 分批处理
+            await new Promise(resolve => {
+                let i = 0;
+                const batchSize = 10000;
+
+                function processBatch() {
+                    const start = performance.now();
+
+                    for (let j = 0; j < batchSize && i < iterations; j++, i++) {
+                        if (isPrime(i)) {
+                            primes++;
+                        }
+                    }
+
+                    progress.style.width = `${(i / iterations) * 100}%`;
+
+                    if (i < iterations) {
+                        setTimeout(processBatch, 0);
+                    } else {
+                        const end = performance.now();
+                        resolve(end - start);
+                    }
+                }
+
+                processBatch();
+            });
+
+            status.className = 'test-status status-done';
+            status.textContent = '完成';
+            progress.style.width = '100%';
+
+            const time = await new Promise(resolve => {
+                // 重新运行以获取准确时间
+                const start = performance.now();
+                for (let i = 0; i < iterations; i++) {
+                    isPrime(i);
+                }
+                resolve(performance.now() - start);
+            });
+
+            result.textContent = time.toFixed(0);
+            details.textContent = `完成 ${iterations.toLocaleString()} 次质数判断 (更精确的 Benchmark)`;
+
+            // 转换为分数 (时间越短分数越高)
+            results.cpu = Math.max(0, 1000 - time) / 10;
+            return results.cpu;
+        }
+
+        function isPrime(n) {
+            if (n < 2) return false;
+            if (n === 2) return true;
+            if (n % 2 === 0) return false;
+            for (let i = 3; i * i <= n; i += 2) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+
+        // 内存测试
+        async function testMemory() {
+            const status = document.getElementById('memoryStatus');
+            const progress = document.getElementById('memoryProgress');
+            const result = document.getElementById('memoryResult');
+            const details = document.getElementById('memoryDetails');
+
+            status.className = 'test-status status-running';
+            status.textContent = '测试中...';
+            progress.style.width = '0%';
+
+            const totalSize = 200 * 1024 * 1024; // 200MB
+            const iterations = 15;
+            let totalTime = 0;
+
+            for (let i = 0; i < iterations; i++) {
+                // 分配内存
+                const start = performance.now();
+                const arr = new Uint8Array(totalSize);
+
+                // 写入
+                for (let j = 0; j < totalSize; j += 1024) {
+                    arr[j] = j % 256;
+                }
+
+                // 读取
+                let sum = 0;
+                for (let j = 0; j < totalSize; j += 1024) {
+                    sum += arr[j];
+                }
+
+                totalTime += performance.now() - start;
+                progress.style.width = `${((i + 1) / iterations) * 100}%`;
+
+                // 释放内存
+                arr.length = 0;
+
+                await new Promise(r => setTimeout(r, 10));
+            }
+
+            const avgTime = totalTime / iterations;
+            const speed = (totalSize / 1024 / 1024) / (avgTime / 1000);
+
+            status.className = 'test-status status-done';
+            status.textContent = '完成';
+            progress.style.width = '100%';
+
+            result.textContent = speed.toFixed(0);
+            details.textContent = `操作 ${totalSize / 1024 / 1024}MB 内存 x${iterations} 次`;
+
+            results.memory = Math.min(100, speed / 50 * 100);
+            return results.memory;
+        }
+
+        // WebGPU 计算测试 - 与分辨率无关
+        async function testGPUCompute() {
+            const status = document.getElementById('gpuStatus');
+            const progress = document.getElementById('gpuProgress');
+            const result = document.getElementById('gpuResult');
+            const details = document.getElementById('gpuDetails');
+
+            if (!webgpuSupported || !device) {
+                status.className = 'test-status status-error';
+                status.textContent = '不支持';
+                result.textContent = '--';
+                results.gpu = 0;
+                return 0;
+            }
+
+            status.className = 'test-status status-running';
+            status.textContent = '测试中...';
+            progress.style.width = '0%';
+
+            // 固定矩阵大小 (512x512)，与分辨率无关
+            const matrixSize = 512;
+            const workgroups = 16;
+
+            // 创建着色器代码
+            const shaderCode = `
+                @group(0) @binding(0) var<storage, read> inputA : array<f32>;
+                @group(0) @binding(1) var<storage, read> inputB : array<f32>;
+                @group(0) @binding(2) var<storage, read_write> output : array<f32>;
+
+                @compute @workgroup_size(${workgroups}, ${workgroups})
+                fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
+                    let size = ${matrixSize}u;
+                    let row = global_id.y;
+                    let col = global_id.x;
+
+                    if (row >= size || col >= size) {
+                        return;
+                    }
+
+                    var sum : f32 = 0.0;
+                    for (var k : u32 = 0u; k < size; k = k + 1u) {
+                        let a = inputA[row * size + k];
+                        let b = inputB[k * size + col];
+                        sum = sum + a * b;
+                    }
+
+                    output[row * size + col] = sum;
+                }
+            `;
+
+            // 创建着色器模块
+            const shaderModule = device.createShaderModule({ code: shaderCode });
+
+            // 创建计算管线
+            const computePipeline = device.createComputePipeline({
+                layout: 'auto',
+                compute: { module: shaderModule, entryPoint: 'main' }
+            });
+
+            // 准备数据
+            const dataSize = matrixSize * matrixSize;
+            const inputA = new Float32Array(dataSize);
+            const inputB = new Float32Array(dataSize);
+            const output = new Float32Array(dataSize);
+
+            // 初始化数据
+            for (let i = 0; i < dataSize; i++) {
+                inputA[i] = Math.random();
+                inputB[i] = Math.random();
+            }
+
+            // 创建缓冲区
+            const bufferA = device.createBuffer({
+                size: inputA.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+            });
+            const bufferB = device.createBuffer({
+                size: inputB.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
+            });
+            const bufferOutput = device.createBuffer({
+                size: output.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+            });
+
+            // 写入数据
+            device.queue.writeBuffer(bufferA, 0, inputA);
+            device.queue.writeBuffer(bufferB, 0, inputB);
+
+            // 创建绑定组
+            const bindGroup = device.createBindGroup({
+                layout: computePipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: bufferA } },
+                    { binding: 1, resource: { buffer: bufferB } },
+                    { binding: 2, resource: { buffer: bufferOutput } }
+                ]
+            });
+
+            // 运行多次测试
+            const iterations = 50;
+            const commandEncoder = device.createCommandEncoder();
+            const passEncoder = commandEncoder.beginComputePass();
+            passEncoder.setPipeline(computePipeline);
+            passEncoder.setBindGroup(0, bindGroup);
+            passEncoder.dispatchWorkgroups(workgroups, workgroups);
+            passEncoder.end();
+
+            // 预热
+            device.queue.submit([commandEncoder.finish()]);
+            await device.queue.onSubmittedWorkDone();
+
+            // 实际测试
+            const startTime = performance.now();
+
+            for (let i = 0; i < iterations; i++) {
+                const cmdEncoder = device.createCommandEncoder();
+                const pass = cmdEncoder.beginComputePass();
+                pass.setPipeline(computePipeline);
+                pass.setBindGroup(0, bindGroup);
+                pass.dispatchWorkgroups(workgroups, workgroups);
+                pass.end();
+                device.queue.submit([cmdEncoder.finish()]);
+            }
+
+            await device.queue.onSubmittedWorkDone();
+            const endTime = performance.now();
+
+            const totalTime = endTime - startTime;
+
+            // 计算 GFLOPS (2 * n^3 次浮点运算 for matrix multiplication)
+            const flops = 2 * Math.pow(matrixSize, 3) * iterations;
+            const gflops = flops / (totalTime / 1000) / 1e9;
+
+            // 清理
+            bufferA.destroy();
+            bufferB.destroy();
+            bufferOutput.destroy();
+
+            status.className = 'test-status status-done';
+            status.textContent = '完成';
+            progress.style.width = '100%';
+
+            result.textContent = gflops.toFixed(2);
+            details.textContent = `固定 ${matrixSize}x${matrixSize} 矩阵计算 ${iterations} 次 (压力测试)`;
+
+            results.gpu = Math.min(100, gflops / 50 * 100);
+            return results.gpu;
+        }
+
+        // WebGPU 渲染测试 - 与分辨率无关
+        async function testGPURender() {
+            const status = document.getElementById('renderStatus');
+            const progress = document.getElementById('renderProgress');
+            const result = document.getElementById('renderResult');
+            const details = document.getElementById('renderDetails');
+
+            if (!webgpuSupported || !device) {
+                status.className = 'test-status status-error';
+                status.textContent = '不支持';
+                result.textContent = '--';
+                results.render = 0;
+                return 0;
+            }
+
+            status.className = 'test-status status-running';
+            status.textContent = '测试中...';
+            progress.style.width = '0%';
+
+            // 创建画布上下文
+            const canvas = document.createElement('canvas');
+            canvas.width = 1; // 最小尺寸，与分辨率无关
+            canvas.height = 1;
+            const context = canvas.getContext('webgpu');
+
+            const format = navigator.gpu.getPreferredCanvasFormat();
+            context.configure({
+                device: device,
+                format: format
+            });
+
+            // 创建渲染管线
+            const shaderCode = `
+                @vertex
+                fn vertexMain(@builtin(vertex_index) vertexIndex : u32) -> @builtin(position) vec4<f32> {
+                    var positions = array<vec2<f32>, 3>(
+                        vec2<f32>(0.0, 0.0),
+                        vec2<f32>(1.0, 0.0),
+                        vec2<f32>(0.0, 1.0)
+                    );
+                    return vec4<f32>(positions[vertexIndex], 0.0, 1.0);
+                }
+
+                @fragment
+                fn fragmentMain() -> @location(0) vec4<f32> {
+                    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+                }
+            `;
+
+            const shaderModule = device.createShaderModule({ code: shaderCode });
+
+            const renderPipeline = device.createRenderPipeline({
+                layout: 'auto',
+                vertex: {
+                    module: shaderModule,
+                    entryPoint: 'vertexMain'
+                },
+                fragment: {
+                    module: shaderModule,
+                    entryPoint: 'fragmentMain',
+                    targets: [{ format }]
+                },
+                primitive: { topology: 'triangle-list' }
+            });
+
+            // 固定绘制次数，与分辨率无关
+            const drawCalls = 50000;
+            const iterations = 10;
+            const batchSize = drawCalls / iterations;
+
+            // 预热
+            for (let i = 0; i < 3; i++) {
+                const cmdEncoder = device.createCommandEncoder();
+                const pass = cmdEncoder.beginRenderPass({
+                    colorAttachments: [{
+                        view: context.getCurrentTexture().createView(),
+                        clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                        loadOp: 'clear',
+                        storeOp: 'store'
+                    }]
+                });
+                pass.setPipeline(renderPipeline);
+                pass.draw(3);
+                pass.end();
+                device.queue.submit([cmdEncoder.finish()]);
+            }
+            await device.queue.onSubmittedWorkDone();
+
+            // 实际测试
+            const startTime = performance.now();
+
+            for (let iter = 0; iter < iterations; iter++) {
+                const cmdEncoder = device.createCommandEncoder();
+                const pass = cmdEncoder.beginRenderPass({
+                    colorAttachments: [{
+                        view: context.getCurrentTexture().createView(),
+                        clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                        loadOp: 'clear',
+                        storeOp: 'store'
+                    }]
+                });
+                pass.setPipeline(renderPipeline);
+
+                // 批量绘制调用
+                for (let i = 0; i < batchSize; i++) {
+                    pass.draw(3);
+                }
+                pass.end();
+                device.queue.submit([cmdEncoder.finish()]);
+            }
+
+            await device.queue.onSubmittedWorkDone();
+            const endTime = performance.now();
+
+            const totalTime = endTime - startTime;
+            const drawsPerSec = (drawCalls / (totalTime / 1000)) / 1000; // k draws/s
+
+            status.className = 'test-status status-done';
+            status.textContent = '完成';
+            progress.style.width = '100%';
+
+            result.textContent = drawsPerSec.toFixed(0);
+            details.textContent = `固定 ${drawCalls.toLocaleString()} 次绘制调用 (压力测试)`;
+
+            results.render = Math.min(100, drawsPerSec / 1000 * 100);
+            return results.render;
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+
+            // 重置结果
+            results = {};
+            document.getElementById('overallScore').classList.remove('visible');
+
+            // 重新获取设备（可能需要重新创建）
+            if (webgpuSupported && !device) {
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (adapter) {
+                        device = await adapter.requestDevice();
+                    }
+                } catch (e) {
+                    console.error('WebGPU device creation failed:', e);
+                }
+            }
+
+            // 运行测试
+            await testCPU();
+            await testMemory();
+
+            if (webgpuSupported) {
+                await testGPUCompute();
+                await testGPURender();
+            }
+
+            // 计算总分
+            calculateOverallScore();
+
+            btn.disabled = false;
+            btn.textContent = '重新测试';
+        }
+
+        function calculateOverallScore() {
+            // 加权平均
+            const weights = {
+                cpu: 0.3,
+                memory: 0.2,
+                gpu: 0.3,
+                render: 0.2
+            };
+
+            let totalScore = 0;
+            let totalWeight = 0;
+
+            for (const [key, weight] of Object.entries(weights)) {
+                if (results[key] !== undefined) {
+                    totalScore += results[key] * weight;
+                    totalWeight += weight;
+                }
+            }
+
+            const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+
+            // 显示总分
+            const overallDiv = document.getElementById('overallScore');
+            const valueDiv = document.getElementById('overallValue');
+            const badgeDiv = document.getElementById('scoreBadge');
+
+            valueDiv.textContent = Math.round(finalScore);
+
+            let grade, className;
+            if (finalScore >= 80) {
+                grade = 'A';
+                className = 'score-a';
+            } else if (finalScore >= 60) {
+                grade = 'B';
+                className = 'score-b';
+            } else if (finalScore >= 40) {
+                grade = 'C';
+                className = 'score-c';
+            } else {
+                grade = 'D';
+                className = 'score-d';
+            }
+
+            badgeDiv.textContent = `等级 ${grade}`;
+            badgeDiv.className = `score-badge ${className}`;
+            overallDiv.classList.add('visible');
+        }
+
+        // 初始化
+        getSystemInfo();
+    </script>
+</body>
+</html>
