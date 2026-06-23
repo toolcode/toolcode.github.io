@@ -618,7 +618,8 @@
                     cpuInt.progress = 100;
                     cpuInt.result = median.toFixed(1);
                     cpuInt.details = `xorshift32 (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
-                    cpuInt.score = Math.min(100, median / 30); // 3000 M ops/s 满分
+                    // 2500 M ops/s 为 100 分基准，幂指数 0.75 避免顶端被压缩，上限 120
+                    cpuInt.score = Math.min(120, 100 * Math.pow(median / 2500, 0.75));
                 };
 
                 // ----- CPU 浮点运算 -----
@@ -683,7 +684,8 @@
                     cpuFloat.progress = 100;
                     cpuFloat.result = median.toFixed(0);
                     cpuFloat.details = `4 路 FMA (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(0)})`;
-                    cpuFloat.score = Math.min(100, median / 50); // 5000 MFLOPS 满分
+                    // 3000 MFLOPS 为 100 分基准
+                    cpuFloat.score = Math.min(120, 100 * Math.pow(median / 3000, 0.75));
                 };
 
                 // ----- 内存带宽 -----
@@ -749,7 +751,8 @@
                     memory.progress = 100;
                     memory.result = median.toFixed(1);
                     memory.details = `顺序读取 ${sizeBytes / 1024 / 1024}MB (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
-                    memory.score = Math.min(100, median / 0.4); // 40 GB/s 满分
+                    // 20 GB/s 为 100 分基准（JS 单线程顺序读的合理上限）
+                    memory.score = Math.min(120, 100 * Math.pow(median / 20, 0.75));
                 };
 
                 // ----- WebGPU 计算（矩阵乘法）-----
@@ -889,7 +892,8 @@
                     gpu.progress = 100;
                     gpu.result = gflops.toFixed(1);
                     gpu.details = `${matrixSize}x${matrixSize} 矩阵 x${iterations} 次 (${runs} 次中位数)`;
-                    gpu.score = Math.min(100, gflops / 200); // 20000 GFLOPS 满分
+                    // 8000 GFLOPS 为 100 分基准（中端独显水平）
+                    gpu.score = Math.min(120, 100 * Math.pow(gflops / 8000, 0.75));
                 };
 
                 // ----- WebGPU 渲染 -----
@@ -1021,7 +1025,8 @@
                     render.progress = 100;
                     render.result = median.toFixed(1);
                     render.details = `${size}x${size} x${totalDraws} draw, blend on (${runs} 次中位数)`;
-                    render.score = Math.min(100, median / 2); // 200 GPix/s 满分
+                    // 120 GPix/s 为 100 分基准
+                    render.score = Math.min(120, 100 * Math.pow(median / 120, 0.75));
                 };
 
                 const resetState = (s, details) => {
@@ -1071,11 +1076,11 @@
 
                 const calculateOverallScore = () => {
                     const weights = {
-                        cpuInt: 0.2,
-                        cpuFloat: 0.2,
-                        memory: 0.2,
+                        cpuInt: 0.15,
+                        cpuFloat: 0.20,
+                        memory: 0.15,
                         gpu: 0.25,
-                        render: 0.15
+                        render: 0.25
                     };
 
                     let total = 0;
@@ -1095,11 +1100,13 @@
                         }
                     }
 
-                    const final = totalWeight > 0 ? total / totalWeight : 0;
+                    // 不归一化：缺项（如无 WebGPU）直接拉低总分，反映真实差距
+                    const final = total;
                     overallScore.value = Math.round(final);
 
-                    if (final >= 80) scoreGrade.value = 'A';
-                    else if (final >= 60) scoreGrade.value = 'B';
+                    if (final >= 85) scoreGrade.value = 'S';
+                    else if (final >= 70) scoreGrade.value = 'A';
+                    else if (final >= 55) scoreGrade.value = 'B';
                     else if (final >= 40) scoreGrade.value = 'C';
                     else scoreGrade.value = 'D';
 
@@ -1108,8 +1115,9 @@
 
                 const scoreClass = computed(() => {
                     const s = overallScore.value;
-                    if (s >= 80) return 'score-a';
-                    if (s >= 60) return 'score-b';
+                    if (s >= 85) return 'score-a';
+                    if (s >= 70) return 'score-a';
+                    if (s >= 55) return 'score-b';
                     if (s >= 40) return 'score-c';
                     return 'score-d';
                 });
