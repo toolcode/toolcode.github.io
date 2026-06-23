@@ -569,7 +569,7 @@
 
                     const innerOps = 4; // 每次 xorshift 迭代等效 4 个整数运算
                     const innerLoop = 1024; // 每批做这么多次
-                    const targetMs = 800;
+                    const targetMs = 1600;
                     const runs = 5;
                     const results = [];
 
@@ -630,7 +630,7 @@
 
                     const innerLoop = 1024;
                     const flopsPerInner = 4 * 2; // 4 chains x (mul + add)
-                    const targetMs = 800;
+                    const targetMs = 1600;
                     const runs = 5;
                     const results = [];
 
@@ -715,7 +715,7 @@
                     memory._sink = warmSum;
 
                     const runs = 5;
-                    const sweepsPerRun = 4; // 多次扫描累积时间, 降低 performance.now() 量化噪声
+                    const sweepsPerRun = 8; // 多次扫描累积时间, 降低 performance.now() 量化噪声
                     const results = [];
 
                     for (let run = 0; run < runs; run++) {
@@ -858,8 +858,8 @@
                     for (let i = 0; i < 5; i++) dispatchOnce();
                     await device.value.queue.onSubmittedWorkDone();
 
-                    const iterations = 20;
-                    const runs = 3;
+                    const iterations = 40;
+                    const runs = 5;
                     const times = [];
 
                     for (let run = 0; run < runs; run++) {
@@ -970,7 +970,7 @@
                     });
 
                     const drawsPerPass = 200;
-                    const passes = 20;
+                    const passes = 40;
                     const totalDraws = drawsPerPass * passes;
                     const pixelsPerDraw = size * size;
                     const totalPixels = pixelsPerDraw * totalDraws;
@@ -998,7 +998,7 @@
                     render.progress = 30;
                     await yieldUI();
 
-                    const runs = 3;
+                    const runs = 5;
                     const rates = [];
                     for (let run = 0; run < runs; run++) {
                         const start = performance.now();
