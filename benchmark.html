@@ -422,14 +422,14 @@
                     </span>
                     <span class="test-status" :class="render.statusClass">{{ render.status }}</span>
                 </div>
-                <p class="test-description">GPU 渲染管线吞吐</p>
+                <p class="test-description">GPU 像素填充率（含 blending 与 fragment 算术负载）</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: render.progress + '%' }"></div>
                 </div>
                 <div class="result-display">
                     <div>
                         <span class="result-value">{{ render.result }}</span>
-                        <span class="result-unit">k draws/s</span>
+                        <span class="result-unit">GPix/s</span>
                     </div>
                     <span class="result-details">{{ render.details }}</span>
                 </div>
@@ -477,7 +477,7 @@
                 const cpuFloat = makeState('双精度 FMA 链');
                 const memory = makeState('顺序读取 256MB');
                 const gpu = makeState('矩阵乘法 1024x1024');
-                const render = makeState('512x512 视口绘制');
+                const render = makeState('2048x2048 像素填充');
 
                 // ----- WebGPU 初始化 -----
                 const initWebGPU = async () => {
@@ -715,6 +715,7 @@
                     memory._sink = warmSum;
 
                     const runs = 5;
+                    const sweepsPerRun = 4; // 多次扫描累积时间, 降低 performance.now() 量化噪声
                     const results = [];
 
                     for (let run = 0; run < runs; run++) {
@@ -722,17 +723,19 @@
 
                         let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
                         const start = performance.now();
-                        // 4 路展开，减少累加器依赖延迟
-                        for (let i = 0; i < elements; i += 4) {
-                            s0 += buffer[i];
-                            s1 += buffer[i + 1];
-                            s2 += buffer[i + 2];
-                            s3 += buffer[i + 3];
+                        for (let sweep = 0; sweep < sweepsPerRun; sweep++) {
+                            // 4 路展开，减少累加器依赖延迟
+                            for (let i = 0; i < elements; i += 4) {
+                                s0 += buffer[i];
+                                s1 += buffer[i + 1];
+                                s2 += buffer[i + 2];
+                                s3 += buffer[i + 3];
+                            }
                         }
                         const elapsed = performance.now() - start;
                         memory._sink = s0 + s1 + s2 + s3;
 
-                        const gbPerSec = (sizeBytes / (elapsed / 1000)) / 1e9;
+                        const gbPerSec = (sizeBytes * sweepsPerRun / (elapsed / 1000)) / 1e9;
                         results.push(gbPerSec);
 
                         memory.progress = ((run + 1) / runs) * 100;
@@ -773,16 +776,30 @@
                         @group(0) @binding(1) var<storage, read> inputB : array<f32>;
                         @group(0) @binding(2) var<storage, read_write> output : array<f32>;
 
+                        const TILE : u32 = ${workgroupSize}u;
+                        var<workgroup> tileA : array<array<f32, ${workgroupSize}>, ${workgroupSize}>;
+                        var<workgroup> tileB : array<array<f32, ${workgroupSize}>, ${workgroupSize}>;
+
                         @compute @workgroup_size(${workgroupSize}, ${workgroupSize})
-                        fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+                        fn main(@builtin(global_invocation_id) gid : vec3<u32>,
+                                @builtin(local_invocation_id) lid : vec3<u32>) {
                             let size : u32 = ${matrixSize}u;
                             let row = gid.y;
                             let col = gid.x;
-                            if (row >= size || col >= size) { return; }
+                            let lx = lid.x;
+                            let ly = lid.y;
 
                             var sum : f32 = 0.0;
-                            for (var k : u32 = 0u; k < size; k = k + 1u) {
-                                sum = sum + inputA[row * size + k] * inputB[k * size + col];
+                            let numTiles = size / TILE;
+                            for (var t : u32 = 0u; t < numTiles; t = t + 1u) {
+                                tileA[ly][lx] = inputA[row * size + (t * TILE + lx)];
+                                tileB[ly][lx] = inputB[(t * TILE + ly) * size + col];
+                                workgroupBarrier();
+
+                                for (var k : u32 = 0u; k < TILE; k = k + 1u) {
+                                    sum = sum + tileA[ly][k] * tileB[k][lx];
+                                }
+                                workgroupBarrier();
                             }
                             output[row * size + col] = sum;
                         }
@@ -876,7 +893,8 @@
                 };
 
                 // ----- WebGPU 渲染 -----
-                // 512x512 离屏渲染，含真实光栅化负载（全屏三角形）
+                // 用大尺寸离屏纹理 + alpha blending 禁用 TBDR 的 HSR 优化
+                // fragment shader 含真实算术负载, 输出"像素填充率 (GPix/s)"
                 const testGPURender = async () => {
                     if (!webgpuSupported.value || !device.value) {
                         render.status = '失败';
@@ -891,7 +909,7 @@
                     render.statusClass = 'status-running';
                     render.progress = 0;
 
-                    const size = 512;
+                    const size = 2048;
                     const format = 'rgba8unorm';
 
                     const texture = device.value.createTexture({
@@ -901,21 +919,35 @@
                     });
                     const view = texture.createView();
 
+                    // fragment 做 16 次乘加, 防止纯填色被识别为 fast clear
+                    // 必须使用 alpha blending 才能让 TBDR 顺序执行所有 draw, 否则 HSR 会跳过被覆盖像素
                     const shaderCode = `
+                        struct VSOut {
+                            @builtin(position) pos : vec4<f32>,
+                            @location(0) uv : vec2<f32>,
+                        };
+
                         @vertex
-                        fn vsMain(@builtin(vertex_index) idx : u32) -> @builtin(position) vec4<f32> {
-                            // 覆盖屏幕的大三角形
+                        fn vsMain(@builtin(vertex_index) idx : u32) -> VSOut {
                             var pos = array<vec2<f32>, 3>(
                                 vec2<f32>(-1.0, -1.0),
                                 vec2<f32>( 3.0, -1.0),
                                 vec2<f32>(-1.0,  3.0)
                             );
-                            return vec4<f32>(pos[idx], 0.0, 1.0);
+                            var out : VSOut;
+                            out.pos = vec4<f32>(pos[idx], 0.0, 1.0);
+                            out.uv = pos[idx];
+                            return out;
                         }
 
                         @fragment
-                        fn fsMain(@builtin(position) frag : vec4<f32>) -> @location(0) vec4<f32> {
-                            return vec4<f32>(frag.x / 512.0, frag.y / 512.0, 0.5, 1.0);
+                        fn fsMain(in : VSOut) -> @location(0) vec4<f32> {
+                            var c = vec3<f32>(in.uv.x, in.uv.y, 0.5);
+                            for (var i : i32 = 0; i < 16; i = i + 1) {
+                                c = fract(c * 1.3 + vec3<f32>(0.1, 0.2, 0.3));
+                                c = c * 0.9 + vec3<f32>(0.05);
+                            }
+                            return vec4<f32>(c, 0.25);
                         }
                     `;
 
@@ -926,14 +958,22 @@
                         fragment: {
                             module: shaderModule,
                             entryPoint: 'fsMain',
-                            targets: [{ format }]
+                            targets: [{
+                                format,
+                                blend: {
+                                    color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                                    alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }
+                                }
+                            }]
                         },
                         primitive: { topology: 'triangle-list' }
                     });
 
-                    const drawCalls = 20000;
-                    const iterations = 10;
-                    const drawsPerPass = drawCalls / iterations;
+                    const drawsPerPass = 200;
+                    const passes = 20;
+                    const totalDraws = drawsPerPass * passes;
+                    const pixelsPerDraw = size * size;
+                    const totalPixels = pixelsPerDraw * totalDraws;
 
                     const recordPass = () => {
                         const enc = device.value.createCommandEncoder();
@@ -955,18 +995,19 @@
                     for (let i = 0; i < 3; i++) recordPass();
                     await device.value.queue.onSubmittedWorkDone();
 
-                    render.progress = 50;
+                    render.progress = 30;
                     await yieldUI();
 
                     const runs = 3;
                     const rates = [];
                     for (let run = 0; run < runs; run++) {
                         const start = performance.now();
-                        for (let iter = 0; iter < iterations; iter++) recordPass();
+                        for (let p = 0; p < passes; p++) recordPass();
                         await device.value.queue.onSubmittedWorkDone();
                         const elapsed = performance.now() - start;
-                        rates.push((drawCalls / (elapsed / 1000)) / 1000);
-                        render.progress = 50 + ((run + 1) / runs) * 50;
+                        const gpixPerSec = totalPixels / (elapsed / 1000) / 1e9;
+                        rates.push(gpixPerSec);
+                        render.progress = 30 + ((run + 1) / runs) * 70;
                         await yieldUI();
                     }
 
@@ -978,9 +1019,9 @@
                     render.status = '完成';
                     render.statusClass = 'status-done';
                     render.progress = 100;
-                    render.result = median.toFixed(0);
-                    render.details = `${size}x${size} 视口, ${drawCalls.toLocaleString()} draw (${runs} 次中位数)`;
-                    render.score = Math.min(100, median / 8); // 800 k draws/s 满分
+                    render.result = median.toFixed(1);
+                    render.details = `${size}x${size} x${totalDraws} draw, blend on (${runs} 次中位数)`;
+                    render.score = Math.min(100, median / 2); // 200 GPix/s 满分
                 };
 
                 const resetState = (s, details) => {
@@ -1000,7 +1041,7 @@
                     resetState(cpuFloat, '双精度 FMA 链');
                     resetState(memory, '顺序读取 256MB');
                     resetState(gpu, '矩阵乘法 1024x1024');
-                    resetState(render, '512x512 视口绘制');
+                    resetState(render, '2048x2048 像素填充');
 
                     if (!webgpuSupported.value || !device.value) {
                         try {
