@@ -26,6 +26,10 @@
         }
 
         h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 30px;
@@ -33,6 +37,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        h1 svg {
+            width: 40px;
+            height: 40px;
+            stroke: url(#titleGrad);
+            fill: none;
+            stroke-width: 1.8;
         }
 
         .test-card {
@@ -52,9 +64,23 @@
         }
 
         .test-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 1.3rem;
             font-weight: 600;
             color: #00d9ff;
+        }
+
+        .test-name .icon {
+            width: 22px;
+            height: 22px;
+            stroke: #00d9ff;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
         }
 
         .test-status {
@@ -217,28 +243,85 @@
         }
 
         .webgpu-not-supported h3 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             color: #ff5252;
             margin-bottom: 10px;
         }
 
+        .webgpu-not-supported h3 svg {
+            width: 22px;
+            height: 22px;
+            stroke: #ff5252;
+            fill: none;
+            stroke-width: 1.8;
+        }
+
         @media (max-width: 600px) {
             h1 { font-size: 1.8rem; }
+            h1 svg { width: 28px; height: 28px; }
             .test-card { padding: 16px; }
             .result-value { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
+    <!-- SVG icon definitions -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#00d9ff"/>
+                <stop offset="100%" stop-color="#00ff88"/>
+            </linearGradient>
+            <symbol id="i-monitor" viewBox="0 0 24 24">
+                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                <path d="M8 21h8M12 17v4"/>
+            </symbol>
+            <symbol id="i-cpu" viewBox="0 0 24 24">
+                <rect x="5" y="5" width="14" height="14" rx="2"/>
+                <rect x="9" y="9" width="6" height="6"/>
+                <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>
+            </symbol>
+            <symbol id="i-sigma" viewBox="0 0 24 24">
+                <path d="M18 4H6l7 8-7 8h12"/>
+            </symbol>
+            <symbol id="i-memory" viewBox="0 0 24 24">
+                <rect x="2" y="7" width="20" height="10" rx="1"/>
+                <path d="M6 17v2M10 17v2M14 17v2M18 17v2M8 11v2M12 11v2M16 11v2"/>
+            </symbol>
+            <symbol id="i-gpu" viewBox="0 0 24 24">
+                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                <circle cx="8" cy="12" r="2.5"/>
+                <circle cx="16" cy="12" r="2.5"/>
+            </symbol>
+            <symbol id="i-bolt" viewBox="0 0 24 24">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>
+            </symbol>
+            <symbol id="i-warn" viewBox="0 0 24 24">
+                <path d="M12 3L2 21h20L12 3z"/>
+                <path d="M12 10v5M12 18v.5"/>
+            </symbol>
+        </defs>
+    </svg>
+
     <div id="app">
         <div class="container">
-            <h1>🖥️ 电脑性能测试</h1>
+            <h1>
+                <svg><use href="#i-monitor"/></svg>
+                电脑性能测试
+            </h1>
 
             <div class="system-info">
                 {{ systemInfo }}
             </div>
 
             <div v-if="webgpuError" class="webgpu-not-supported">
-                <h3>⚠️ WebGPU 初始化失败</h3>
+                <h3>
+                    <svg><use href="#i-warn"/></svg>
+                    WebGPU 初始化失败
+                </h3>
                 <p>{{ webgpuError }}</p>
                 <ul style="text-align: left; margin-top: 10px;">
                     <li v-if="!navigatorGpu">请使用 Chrome 113+、Edge 113+ 或其他支持 WebGPU 的浏览器</li>
@@ -249,10 +332,13 @@
 
             <div class="test-card">
                 <div class="test-header">
-                    <span class="test-name">🔥 CPU 整数运算</span>
+                    <span class="test-name">
+                        <svg class="icon"><use href="#i-cpu"/></svg>
+                        CPU 整数运算
+                    </span>
                     <span class="test-status" :class="cpuInt.statusClass">{{ cpuInt.status }}</span>
                 </div>
-                <p class="test-description">测试 CPU 整数运算性能（不涉及浮点数，避免 FPU 差异）</p>
+                <p class="test-description">单线程整数密集运算</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: cpuInt.progress + '%' }"></div>
                 </div>
@@ -267,10 +353,13 @@
 
             <div class="test-card">
                 <div class="test-header">
-                    <span class="test-name">🔢 CPU 浮点运算</span>
+                    <span class="test-name">
+                        <svg class="icon"><use href="#i-sigma"/></svg>
+                        CPU 浮点运算
+                    </span>
                     <span class="test-status" :class="cpuFloat.statusClass">{{ cpuFloat.status }}</span>
                 </div>
-                <p class="test-description">测试 CPU 浮点运算性能（SIMD 优化测试）</p>
+                <p class="test-description">单线程双精度 FMA 链路</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: cpuFloat.progress + '%' }"></div>
                 </div>
@@ -285,10 +374,13 @@
 
             <div class="test-card">
                 <div class="test-header">
-                    <span class="test-name">💾 内存带宽</span>
+                    <span class="test-name">
+                        <svg class="icon"><use href="#i-memory"/></svg>
+                        内存带宽
+                    </span>
                     <span class="test-status" :class="memory.statusClass">{{ memory.status }}</span>
                 </div>
-                <p class="test-description">测试内存连续读写带宽（真实内存带宽测试）</p>
+                <p class="test-description">大数组连续读取带宽</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: memory.progress + '%' }"></div>
                 </div>
@@ -303,10 +395,13 @@
 
             <div class="test-card">
                 <div class="test-header">
-                    <span class="test-name">🎮 WebGPU 计算性能</span>
+                    <span class="test-name">
+                        <svg class="icon"><use href="#i-gpu"/></svg>
+                        WebGPU 计算性能
+                    </span>
                     <span class="test-status" :class="gpu.statusClass">{{ gpu.status }}</span>
                 </div>
-                <p class="test-description">使用 GPU 进行并行计算测试（矩阵运算，与分辨率无关）</p>
+                <p class="test-description">GPU 矩阵乘法并行计算</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: gpu.progress + '%' }"></div>
                 </div>
@@ -321,10 +416,13 @@
 
             <div class="test-card">
                 <div class="test-header">
-                    <span class="test-name">⚡ WebGPU 渲染性能</span>
+                    <span class="test-name">
+                        <svg class="icon"><use href="#i-bolt"/></svg>
+                        WebGPU 渲染性能
+                    </span>
                     <span class="test-status" :class="render.statusClass">{{ render.status }}</span>
                 </div>
-                <p class="test-description">测试 GPU 渲染管线性能（绘制调用测试，与分辨率无关）</p>
+                <p class="test-description">GPU 渲染管线吞吐</p>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: render.progress + '%' }"></div>
                 </div>
@@ -350,7 +448,7 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, onMounted } = Vue;
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
 
         createApp({
             setup() {
@@ -358,6 +456,7 @@
                 const webgpuError = ref(null);
                 const webgpuSupported = ref(false);
                 const device = ref(null);
+                const adapterRef = ref(null);
                 const isTesting = ref(false);
                 const showOverall = ref(false);
                 const overallScore = ref(0);
@@ -365,59 +464,22 @@
 
                 const systemInfo = ref('正在获取系统信息...');
 
-                const cpuInt = reactive({
+                const makeState = (details) => reactive({
                     status: '待测试',
                     statusClass: 'status-pending',
                     progress: 0,
                     result: '--',
-                    details: '32位整数运算',
+                    details,
                     score: 0
                 });
 
-                const cpuFloat = reactive({
-                    status: '待测试',
-                    statusClass: 'status-pending',
-                    progress: 0,
-                    result: '--',
-                    details: '双精度浮点运算',
-                    score: 0
-                });
+                const cpuInt = makeState('xorshift32 异或链');
+                const cpuFloat = makeState('双精度 FMA 链');
+                const memory = makeState('顺序读取 256MB');
+                const gpu = makeState('矩阵乘法 1024x1024');
+                const render = makeState('512x512 视口绘制');
 
-                const memory = reactive({
-                    status: '待测试',
-                    statusClass: 'status-pending',
-                    progress: 0,
-                    result: '--',
-                    details: '连续读写 512MB',
-                    score: 0
-                });
-
-                const gpu = reactive({
-                    status: '待测试',
-                    statusClass: 'status-pending',
-                    progress: 0,
-                    result: '--',
-                    details: '固定 512x512 矩阵计算',
-                    score: 0
-                });
-
-                const render = reactive({
-                    status: '待测试',
-                    statusClass: 'status-pending',
-                    progress: 0,
-                    result: '--',
-                    details: '固定 50000 次绘制调用',
-                    score: 0
-                });
-
-                const getScoreClass = (score) => {
-                    if (score >= 80) return 'score-a';
-                    if (score >= 60) return 'score-b';
-                    if (score >= 40) return 'score-c';
-                    return 'score-d';
-                };
-
-                // 初始化 WebGPU
+                // ----- WebGPU 初始化 -----
                 const initWebGPU = async () => {
                     if (!navigator.gpu) {
                         webgpuError.value = '浏览器不支持 WebGPU';
@@ -434,6 +496,7 @@
                             return false;
                         }
 
+                        adapterRef.value = adapter;
                         device.value = await adapter.requestDevice();
 
                         if (!device.value) {
@@ -460,185 +523,233 @@
                 };
 
                 const getGPUInfo = async () => {
-                    if (!navigator.gpu) return '不支持';
+                    if (!adapterRef.value) return '未知 GPU';
                     try {
-                        const adapter = await navigator.gpu.requestAdapter();
-                        if (!adapter) return '无适配器';
-                        const info = await adapter.requestInfo();
-                        return info.description || '未知 GPU';
+                        // 新 API：adapter.info；旧 API：requestAdapterInfo
+                        let info = adapterRef.value.info;
+                        if (!info && adapterRef.value.requestAdapterInfo) {
+                            info = await adapterRef.value.requestAdapterInfo();
+                        }
+                        if (!info) return '未知 GPU';
+                        return info.description || info.device || info.vendor || '未知 GPU';
                     } catch (e) {
-                        return '获取失败';
+                        return '未知 GPU';
                     }
                 };
 
                 const updateSystemInfo = async () => {
                     const ua = navigator.userAgent;
-                    const browserInfo = ua.includes('Chrome') ? 'Chrome' : ua.includes('Firefox') ? 'Firefox' : ua.includes('Safari') ? 'Safari' : '其他';
+                    const browserInfo = ua.includes('Edg/') ? 'Edge'
+                        : ua.includes('Chrome') ? 'Chrome'
+                        : ua.includes('Firefox') ? 'Firefox'
+                        : ua.includes('Safari') ? 'Safari' : '其他';
                     const memoryInfo = navigator.deviceMemory ? `内存: ${navigator.deviceMemory} GB | ` : '';
                     const cpuInfo = `CPU 核心: ${navigator.hardwareConcurrency || '未知'}`;
                     systemInfo.value = `浏览器: ${browserInfo} | GPU: 检测中... | ${memoryInfo}${cpuInfo}`;
 
                     try {
-                        const gpuInitialized = await initWebGPU();
-                        if (gpuInitialized && device.value) {
-                            const gpuInfo = await getGPUInfo();
-                            systemInfo.value = `浏览器: ${browserInfo} | GPU: ${gpuInfo} | ${memoryInfo}${cpuInfo}`;
-                        } else {
-                            systemInfo.value = `浏览器: ${browserInfo} | GPU: ${webgpuError.value || '不支持'} | ${memoryInfo}${cpuInfo}`;
-                        }
+                        const ok = await initWebGPU();
+                        const gpuName = ok ? await getGPUInfo() : (webgpuError.value || '不支持');
+                        systemInfo.value = `浏览器: ${browserInfo} | GPU: ${gpuName} | ${memoryInfo}${cpuInfo}`;
                     } catch (e) {
                         systemInfo.value = `浏览器: ${browserInfo} | GPU: 检测失败 | ${memoryInfo}${cpuInfo}`;
                     }
                 };
 
-                // CPU 整数运算测试
+                // ----- 工具：让浏览器有机会更新 UI -----
+                const yieldUI = () => new Promise(r => setTimeout(r, 0));
+
+                // ----- CPU 整数运算 -----
+                // 使用 xorshift32：每次循环包含 4 个 32 位整数运算（<<, ^, >>>, ^）
+                // 状态依赖前一次结果，JIT 无法预计算或消除
                 const testCPUInt = async () => {
                     cpuInt.status = '测试中...';
                     cpuInt.statusClass = 'status-running';
                     cpuInt.progress = 0;
 
-                    const opsPerIteration = 100;
-                    const targetTime = 2000;
+                    const innerOps = 4; // 每次 xorshift 迭代等效 4 个整数运算
+                    const innerLoop = 1024; // 每批做这么多次
+                    const targetMs = 800;
                     const runs = 5;
                     const results = [];
 
                     // 预热
-                    let sum = 0;
-                    for (let i = 0; i < 1000000; i++) {
-                        sum += ((i * 17 + 31) ^ (i >> 2)) % 1000;
+                    let seed = 0x12345678 | 0;
+                    for (let i = 0; i < 200000; i++) {
+                        seed ^= seed << 13;
+                        seed ^= seed >>> 17;
+                        seed ^= seed << 5;
                     }
+                    cpuInt._sink = seed;
 
-                    // 实际测试
                     for (let run = 0; run < runs; run++) {
-                        cpuInt.progress = ((run + 1) / runs) * 100;
-                        await new Promise(r => setTimeout(r, 0)); // 让浏览器更新DOM
+                        await yieldUI();
 
-                        let iterations = 0;
+                        seed = (0xdeadbeef + run) | 0;
+                        let batches = 0;
                         const start = performance.now();
                         let elapsed = 0;
 
-                        while (elapsed < targetTime) {
-                            for (let i = 0; i < opsPerIteration; i++) {
-                                sum += ((iterations * 17 + 31) ^ (iterations >> 2)) % 1000;
+                        while (elapsed < targetMs) {
+                            for (let i = 0; i < innerLoop; i++) {
+                                seed ^= seed << 13;
+                                seed ^= seed >>> 17;
+                                seed ^= seed << 5;
+                                seed = (seed + 0x9e3779b9) | 0;
                             }
-                            iterations++;
+                            batches++;
                             elapsed = performance.now() - start;
                         }
+                        // 防止 dead code elimination
+                        cpuInt._sink = (cpuInt._sink ^ seed) | 0;
 
-                        const totalOps = iterations * opsPerIteration;
+                        const totalOps = batches * innerLoop * innerOps;
                         const mops = totalOps / (elapsed / 1000) / 1e6;
                         results.push(mops);
+
+                        cpuInt.progress = ((run + 1) / runs) * 100;
                     }
 
                     results.sort((a, b) => a - b);
-                    const medianMops = results[Math.floor(results.length / 2)];
+                    const median = results[Math.floor(results.length / 2)];
 
                     cpuInt.status = '完成';
                     cpuInt.statusClass = 'status-done';
                     cpuInt.progress = 100;
-                    cpuInt.result = medianMops.toFixed(1);
-                    cpuInt.details = `32位整数运算 (${runs}次中位数)`;
-                    cpuInt.score = Math.min(100, medianMops / 50);
+                    cpuInt.result = median.toFixed(1);
+                    cpuInt.details = `xorshift32 (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
+                    cpuInt.score = Math.min(100, median / 30); // 3000 M ops/s 满分
                 };
 
-                // CPU 浮点运算测试
+                // ----- CPU 浮点运算 -----
+                // 4 条独立 FMA 链：每个 a = a * c1 + c2 算 2 FLOP，4 条并行让乱序执行/SIMD 有空间
                 const testCPUFloat = async () => {
                     cpuFloat.status = '测试中...';
                     cpuFloat.statusClass = 'status-running';
                     cpuFloat.progress = 0;
 
+                    const innerLoop = 1024;
+                    const flopsPerInner = 4 * 2; // 4 chains x (mul + add)
+                    const targetMs = 800;
                     const runs = 5;
                     const results = [];
 
                     // 预热
-                    let x = 1.0;
-                    for (let i = 0; i < 100000; i++) {
-                        x = x * 1.00001 + Math.sin(x) * 0.00001;
-                    }
+                    let w = 1.0;
+                    for (let i = 0; i < 200000; i++) w = w * 1.0000001 + 0.0000001;
+                    cpuFloat._sink = w;
 
-                    // 实际测试
                     for (let run = 0; run < runs; run++) {
-                        cpuFloat.progress = ((run + 1) / runs) * 100;
-                        await new Promise(r => setTimeout(r, 0)); // 让浏览器更新DOM
+                        await yieldUI();
 
-                        const iterations = 5000000;
-                        x = 1.0;
+                        let a = 1.0 + run * 0.1;
+                        let b = 1.0 + run * 0.2;
+                        let c = 1.0 + run * 0.3;
+                        let d = 1.0 + run * 0.4;
+                        const k1 = 1.0000001;
+                        const k2 = 0.9999999;
+                        const k3 = 1.0000002;
+                        const k4 = 0.9999998;
+                        const eps = 1e-12;
 
+                        let batches = 0;
                         const start = performance.now();
-                        for (let i = 0; i < iterations; i++) {
-                            x = x * 1.00001 + Math.sin(x) * 0.00001 + Math.cos(x) * 0.00001;
-                            x = Math.sqrt(Math.abs(x)) + Math.log(x + 1);
-                        }
-                        const elapsed = performance.now() - start;
+                        let elapsed = 0;
 
-                        const mflops = (iterations * 10) / (elapsed / 1000) / 1e6;
+                        while (elapsed < targetMs) {
+                            for (let i = 0; i < innerLoop; i++) {
+                                a = a * k1 + eps;
+                                b = b * k2 + eps;
+                                c = c * k3 + eps;
+                                d = d * k4 + eps;
+                            }
+                            batches++;
+                            elapsed = performance.now() - start;
+                        }
+                        cpuFloat._sink = a + b + c + d;
+
+                        const flops = batches * innerLoop * flopsPerInner;
+                        const mflops = flops / (elapsed / 1000) / 1e6;
                         results.push(mflops);
+
+                        cpuFloat.progress = ((run + 1) / runs) * 100;
                     }
 
                     results.sort((a, b) => a - b);
-                    const medianMflops = results[Math.floor(results.length / 2)];
+                    const median = results[Math.floor(results.length / 2)];
 
                     cpuFloat.status = '完成';
                     cpuFloat.statusClass = 'status-done';
                     cpuFloat.progress = 100;
-                    cpuFloat.result = medianMflops.toFixed(1);
-                    cpuFloat.details = `浮点运算+数学函数 (${runs}次中位数)`;
-                    cpuFloat.score = Math.min(100, medianMflops / 5);
+                    cpuFloat.result = median.toFixed(0);
+                    cpuFloat.details = `4 路 FMA (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(0)})`;
+                    cpuFloat.score = Math.min(100, median / 50); // 5000 MFLOPS 满分
                 };
 
-                // 内存带宽测试
+                // ----- 内存带宽 -----
+                // 顺序读取 Float64Array, 用 sum 累加器避免 JIT 消除
                 const testMemory = async () => {
                     memory.status = '测试中...';
                     memory.statusClass = 'status-running';
                     memory.progress = 0;
 
-                    const size = 512 * 1024 * 1024;
+                    const sizeBytes = 256 * 1024 * 1024;
+                    const elements = sizeBytes / 8;
+                    let buffer;
+                    try {
+                        buffer = new Float64Array(elements);
+                    } catch (e) {
+                        memory.status = '失败';
+                        memory.statusClass = 'status-error';
+                        memory.details = '内存分配失败';
+                        memory.score = 0;
+                        return;
+                    }
+
+                    // 真正填充（同时刷出 OS lazy-allocate 的零页）
+                    for (let i = 0; i < elements; i++) buffer[i] = i * 1.5;
+
+                    // 预热缓存层级
+                    let warmSum = 0;
+                    for (let i = 0; i < elements; i++) warmSum += buffer[i];
+                    memory._sink = warmSum;
+
                     const runs = 5;
                     const results = [];
 
-                    // 预热
-                    const warmup = new Float64Array(size / 8);
-                    for (let i = 0; i < size / 8; i += 4096) {
-                        warmup[i] = i;
-                    }
-                    warmup[0] = warmup[0];
-                    warmup.length = 0;
-
-                    const readBuffer = new Float64Array(size / 8);
-
                     for (let run = 0; run < runs; run++) {
-                        memory.progress = ((run + 1) / runs) * 100;
-                        await new Promise(r => setTimeout(r, 0)); // 让浏览器更新DOM
+                        await yieldUI();
 
-                        for (let i = 0; i < size / 8; i++) {
-                            readBuffer[i] = i * 1.5;
-                        }
-
-                        let sum = 0;
+                        let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
                         const start = performance.now();
-                        for (let i = 0; i < size / 8; i++) {
-                            sum += readBuffer[i];
+                        // 4 路展开，减少累加器依赖延迟
+                        for (let i = 0; i < elements; i += 4) {
+                            s0 += buffer[i];
+                            s1 += buffer[i + 1];
+                            s2 += buffer[i + 2];
+                            s3 += buffer[i + 3];
                         }
                         const elapsed = performance.now() - start;
+                        memory._sink = s0 + s1 + s2 + s3;
 
-                        const gbPerSec = (size / (elapsed / 1000)) / 1e9;
+                        const gbPerSec = (sizeBytes / (elapsed / 1000)) / 1e9;
                         results.push(gbPerSec);
+
+                        memory.progress = ((run + 1) / runs) * 100;
                     }
 
-                    readBuffer.length = 0;
-
                     results.sort((a, b) => a - b);
-                    const medianGB = results[Math.floor(results.length / 2)];
+                    const median = results[Math.floor(results.length / 2)];
 
                     memory.status = '完成';
                     memory.statusClass = 'status-done';
                     memory.progress = 100;
-                    memory.result = medianGB.toFixed(1);
-                    memory.details = `连续读取 ${size / 1024 / 1024}MB (${runs}次中位数)`;
-                    memory.score = Math.min(100, medianGB / 0.5);
+                    memory.result = median.toFixed(1);
+                    memory.details = `顺序读取 ${sizeBytes / 1024 / 1024}MB (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
+                    memory.score = Math.min(100, median / 0.4); // 40 GB/s 满分
                 };
 
-                // WebGPU 计算测试
+                // ----- WebGPU 计算（矩阵乘法）-----
                 const testGPUCompute = async () => {
                     if (!webgpuSupported.value || !device.value) {
                         gpu.status = '失败';
@@ -653,37 +764,32 @@
                     gpu.statusClass = 'status-running';
                     gpu.progress = 0;
 
-                    const matrixSize = 512;
-                    const workgroups = 16;
+                    const matrixSize = 1024;
+                    const workgroupSize = 16;
+                    const dispatchCount = matrixSize / workgroupSize; // 64
 
                     const shaderCode = `
                         @group(0) @binding(0) var<storage, read> inputA : array<f32>;
                         @group(0) @binding(1) var<storage, read> inputB : array<f32>;
                         @group(0) @binding(2) var<storage, read_write> output : array<f32>;
 
-                        @compute @workgroup_size(${workgroups}, ${workgroups})
-                        fn main(@builtin(global_invocation_id) global_id : vec3<u32>) {
-                            let size = ${matrixSize}u;
-                            let row = global_id.y;
-                            let col = global_id.x;
-
-                            if (row >= size || col >= size) {
-                                return;
-                            }
+                        @compute @workgroup_size(${workgroupSize}, ${workgroupSize})
+                        fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+                            let size : u32 = ${matrixSize}u;
+                            let row = gid.y;
+                            let col = gid.x;
+                            if (row >= size || col >= size) { return; }
 
                             var sum : f32 = 0.0;
                             for (var k : u32 = 0u; k < size; k = k + 1u) {
-                                let a = inputA[row * size + k];
-                                let b = inputB[k * size + col];
-                                sum = sum + a * b;
+                                sum = sum + inputA[row * size + k] * inputB[k * size + col];
                             }
-
                             output[row * size + col] = sum;
                         }
                     `;
 
                     const shaderModule = device.value.createShaderModule({ code: shaderCode });
-                    const computePipeline = device.value.createComputePipeline({
+                    const pipeline = device.value.createComputePipeline({
                         layout: 'auto',
                         compute: { module: shaderModule, entryPoint: 'main' }
                     });
@@ -691,91 +797,86 @@
                     const dataSize = matrixSize * matrixSize;
                     const inputA = new Float32Array(dataSize);
                     const inputB = new Float32Array(dataSize);
-
                     for (let i = 0; i < dataSize; i++) {
                         inputA[i] = Math.random();
                         inputB[i] = Math.random();
                     }
 
-                    const bufferA = device.value.createBuffer({
+                    const bufA = device.value.createBuffer({
                         size: inputA.byteLength,
                         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
                     });
-                    const bufferB = device.value.createBuffer({
+                    const bufB = device.value.createBuffer({
                         size: inputB.byteLength,
                         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
                     });
-                    const bufferOutput = device.value.createBuffer({
+                    const bufOut = device.value.createBuffer({
                         size: dataSize * 4,
                         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
                     });
 
-                    device.value.queue.writeBuffer(bufferA, 0, inputA);
-                    device.value.queue.writeBuffer(bufferB, 0, inputB);
+                    device.value.queue.writeBuffer(bufA, 0, inputA);
+                    device.value.queue.writeBuffer(bufB, 0, inputB);
 
                     const bindGroup = device.value.createBindGroup({
-                        layout: computePipeline.getBindGroupLayout(0),
+                        layout: pipeline.getBindGroupLayout(0),
                         entries: [
-                            { binding: 0, resource: { buffer: bufferA } },
-                            { binding: 1, resource: { buffer: bufferB } },
-                            { binding: 2, resource: { buffer: bufferOutput } }
+                            { binding: 0, resource: { buffer: bufA } },
+                            { binding: 1, resource: { buffer: bufB } },
+                            { binding: 2, resource: { buffer: bufOut } }
                         ]
                     });
 
-                    const iterations = 50;
-                    const times = [];
-
-                    // 预热
-                    for (let w = 0; w < 10; w++) {
-                        const cmdEncoder = device.value.createCommandEncoder();
-                        const pass = cmdEncoder.beginComputePass();
-                        pass.setPipeline(computePipeline);
+                    const dispatchOnce = () => {
+                        const enc = device.value.createCommandEncoder();
+                        const pass = enc.beginComputePass();
+                        pass.setPipeline(pipeline);
                         pass.setBindGroup(0, bindGroup);
-                        pass.dispatchWorkgroups(workgroups, workgroups);
+                        pass.dispatchWorkgroups(dispatchCount, dispatchCount);
                         pass.end();
-                        device.value.queue.submit([cmdEncoder.finish()]);
-                    }
+                        device.value.queue.submit([enc.finish()]);
+                    };
+
+                    // 预热（同时让 GPU 进入高频）
+                    for (let i = 0; i < 5; i++) dispatchOnce();
                     await device.value.queue.onSubmittedWorkDone();
 
-                    // 实际测试
-                    for (let run = 0; run < 3; run++) {
-                        gpu.progress = ((run + 1) / 3) * 100;
-                        await new Promise(r => setTimeout(r, 0)); // 让浏览器更新DOM
+                    const iterations = 20;
+                    const runs = 3;
+                    const times = [];
 
-                        const startTime = performance.now();
-                        for (let i = 0; i < iterations; i++) {
-                            const cmdEncoder = device.value.createCommandEncoder();
-                            const pass = cmdEncoder.beginComputePass();
-                            pass.setPipeline(computePipeline);
-                            pass.setBindGroup(0, bindGroup);
-                            pass.dispatchWorkgroups(workgroups, workgroups);
-                            pass.end();
-                            device.value.queue.submit([cmdEncoder.finish()]);
-                        }
+                    for (let run = 0; run < runs; run++) {
+                        await yieldUI();
+
+                        const start = performance.now();
+                        for (let i = 0; i < iterations; i++) dispatchOnce();
                         await device.value.queue.onSubmittedWorkDone();
-                        const endTime = performance.now();
-                        times.push(endTime - startTime);
+                        const elapsed = performance.now() - start;
+                        times.push(elapsed);
+
+                        gpu.progress = ((run + 1) / runs) * 100;
                     }
 
                     times.sort((a, b) => a - b);
-                    const medianTime = times[Math.floor(times.length / 2)];
-
+                    const medianMs = times[Math.floor(times.length / 2)];
+                    // 每次矩阵乘法: 2 * N^3 FLOPs
                     const flops = 2 * Math.pow(matrixSize, 3) * iterations;
-                    const gflops = flops / (medianTime / 1000) / 1e9;
+                    const gflops = flops / (medianMs / 1000) / 1e9;
 
-                    bufferA.destroy();
-                    bufferB.destroy();
-                    bufferOutput.destroy();
+                    bufA.destroy();
+                    bufB.destroy();
+                    bufOut.destroy();
 
                     gpu.status = '完成';
                     gpu.statusClass = 'status-done';
                     gpu.progress = 100;
-                    gpu.result = gflops.toFixed(2);
-                    gpu.details = `矩阵乘法 ${matrixSize}x${matrixSize} x${iterations} 次`;
-                    gpu.score = Math.min(100, gflops / 50);
+                    gpu.result = gflops.toFixed(1);
+                    gpu.details = `${matrixSize}x${matrixSize} 矩阵 x${iterations} 次 (${runs} 次中位数)`;
+                    gpu.score = Math.min(100, gflops / 200); // 20000 GFLOPS 满分
                 };
 
-                // WebGPU 渲染测试
+                // ----- WebGPU 渲染 -----
+                // 512x512 离屏渲染，含真实光栅化负载（全屏三角形）
                 const testGPURender = async () => {
                     if (!webgpuSupported.value || !device.value) {
                         render.status = '失败';
@@ -790,160 +891,137 @@
                     render.statusClass = 'status-running';
                     render.progress = 0;
 
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1;
-                    canvas.height = 1;
-                    const context = canvas.getContext('webgpu');
+                    const size = 512;
+                    const format = 'rgba8unorm';
 
-                    const format = navigator.gpu.getPreferredCanvasFormat();
-                    context.configure({ device: device.value, format: format });
+                    const texture = device.value.createTexture({
+                        size: [size, size],
+                        format,
+                        usage: GPUTextureUsage.RENDER_ATTACHMENT
+                    });
+                    const view = texture.createView();
 
                     const shaderCode = `
                         @vertex
-                        fn vertexMain(@builtin(vertex_index) vertexIndex : u32) -> @builtin(position) vec4<f32> {
-                            var positions = array<vec2<f32>, 3>(
-                                vec2<f32>(0.0, 0.0),
-                                vec2<f32>(1.0, 0.0),
-                                vec2<f32>(0.0, 1.0)
+                        fn vsMain(@builtin(vertex_index) idx : u32) -> @builtin(position) vec4<f32> {
+                            // 覆盖屏幕的大三角形
+                            var pos = array<vec2<f32>, 3>(
+                                vec2<f32>(-1.0, -1.0),
+                                vec2<f32>( 3.0, -1.0),
+                                vec2<f32>(-1.0,  3.0)
                             );
-                            return vec4<f32>(positions[vertexIndex], 0.0, 1.0);
+                            return vec4<f32>(pos[idx], 0.0, 1.0);
                         }
 
                         @fragment
-                        fn fragmentMain() -> @location(0) vec4<f32> {
-                            return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+                        fn fsMain(@builtin(position) frag : vec4<f32>) -> @location(0) vec4<f32> {
+                            return vec4<f32>(frag.x / 512.0, frag.y / 512.0, 0.5, 1.0);
                         }
                     `;
 
                     const shaderModule = device.value.createShaderModule({ code: shaderCode });
-                    const renderPipeline = device.value.createRenderPipeline({
+                    const pipeline = device.value.createRenderPipeline({
                         layout: 'auto',
-                        vertex: { module: shaderModule, entryPoint: 'vertexMain' },
+                        vertex: { module: shaderModule, entryPoint: 'vsMain' },
                         fragment: {
                             module: shaderModule,
-                            entryPoint: 'fragmentMain',
+                            entryPoint: 'fsMain',
                             targets: [{ format }]
                         },
                         primitive: { topology: 'triangle-list' }
                     });
 
-                    const drawCalls = 50000;
+                    const drawCalls = 20000;
                     const iterations = 10;
-                    const batchSize = drawCalls / iterations;
+                    const drawsPerPass = drawCalls / iterations;
+
+                    const recordPass = () => {
+                        const enc = device.value.createCommandEncoder();
+                        const pass = enc.beginRenderPass({
+                            colorAttachments: [{
+                                view,
+                                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                                loadOp: 'clear',
+                                storeOp: 'store'
+                            }]
+                        });
+                        pass.setPipeline(pipeline);
+                        for (let i = 0; i < drawsPerPass; i++) pass.draw(3);
+                        pass.end();
+                        device.value.queue.submit([enc.finish()]);
+                    };
 
                     // 预热
-                    for (let i = 0; i < 3; i++) {
-                        const cmdEncoder = device.value.createCommandEncoder();
-                        const pass = cmdEncoder.beginRenderPass({
-                            colorAttachments: [{
-                                view: context.getCurrentTexture().createView(),
-                                clearValue: { r: 0, g: 0, b: 0, a: 1 },
-                                loadOp: 'clear',
-                                storeOp: 'store'
-                            }]
-                        });
-                        pass.setPipeline(renderPipeline);
-                        pass.draw(3);
-                        pass.end();
-                        device.value.queue.submit([cmdEncoder.finish()]);
-                    }
+                    for (let i = 0; i < 3; i++) recordPass();
                     await device.value.queue.onSubmittedWorkDone();
 
-                    // 实际测试
                     render.progress = 50;
-                    await new Promise(r => setTimeout(r, 0)); // 让浏览器更新DOM
+                    await yieldUI();
 
-                    const startTime = performance.now();
-                    for (let iter = 0; iter < iterations; iter++) {
-                        const cmdEncoder = device.value.createCommandEncoder();
-                        const pass = cmdEncoder.beginRenderPass({
-                            colorAttachments: [{
-                                view: context.getCurrentTexture().createView(),
-                                clearValue: { r: 0, g: 0, b: 0, a: 1 },
-                                loadOp: 'clear',
-                                storeOp: 'store'
-                            }]
-                        });
-                        pass.setPipeline(renderPipeline);
-                        for (let i = 0; i < batchSize; i++) {
-                            pass.draw(3);
-                        }
-                        pass.end();
-                        device.value.queue.submit([cmdEncoder.finish()]);
+                    const runs = 3;
+                    const rates = [];
+                    for (let run = 0; run < runs; run++) {
+                        const start = performance.now();
+                        for (let iter = 0; iter < iterations; iter++) recordPass();
+                        await device.value.queue.onSubmittedWorkDone();
+                        const elapsed = performance.now() - start;
+                        rates.push((drawCalls / (elapsed / 1000)) / 1000);
+                        render.progress = 50 + ((run + 1) / runs) * 50;
+                        await yieldUI();
                     }
 
-                    await device.value.queue.onSubmittedWorkDone();
-                    const endTime = performance.now();
+                    rates.sort((a, b) => a - b);
+                    const median = rates[Math.floor(rates.length / 2)];
 
-                    const totalTime = endTime - startTime;
-                    const drawsPerSec = (drawCalls / (totalTime / 1000)) / 1000;
+                    texture.destroy();
 
                     render.status = '完成';
                     render.statusClass = 'status-done';
                     render.progress = 100;
-                    render.result = drawsPerSec.toFixed(0);
-                    render.details = `${drawCalls.toLocaleString()} 次绘制调用`;
-                    render.score = Math.min(100, drawsPerSec / 10);
+                    render.result = median.toFixed(0);
+                    render.details = `${size}x${size} 视口, ${drawCalls.toLocaleString()} draw (${runs} 次中位数)`;
+                    render.score = Math.min(100, median / 8); // 800 k draws/s 满分
+                };
+
+                const resetState = (s, details) => {
+                    s.status = '待测试';
+                    s.statusClass = 'status-pending';
+                    s.progress = 0;
+                    s.result = '--';
+                    s.details = details;
+                    s.score = 0;
                 };
 
                 const runAllTests = async () => {
                     isTesting.value = true;
                     showOverall.value = false;
 
-                    // 重置状态
-                    Object.assign(cpuInt, { status: '待测试', statusClass: 'status-pending', progress: 0, result: '--', details: '32位整数运算', score: 0 });
-                    Object.assign(cpuFloat, { status: '待测试', statusClass: 'status-pending', progress: 0, result: '--', details: '双精度浮点运算', score: 0 });
-                    Object.assign(memory, { status: '待测试', statusClass: 'status-pending', progress: 0, result: '--', details: '连续读写 512MB', score: 0 });
-                    Object.assign(gpu, { status: '待测试', statusClass: 'status-pending', progress: 0, result: '--', details: '固定 512x512 矩阵计算', score: 0 });
-                    Object.assign(render, { status: '待测试', statusClass: 'status-pending', progress: 0, result: '--', details: '固定 50000 次绘制调用', score: 0 });
+                    resetState(cpuInt, 'xorshift32 异或链');
+                    resetState(cpuFloat, '双精度 FMA 链');
+                    resetState(memory, '顺序读取 256MB');
+                    resetState(gpu, '矩阵乘法 1024x1024');
+                    resetState(render, '512x512 视口绘制');
 
-                    // 尝试初始化 WebGPU
                     if (!webgpuSupported.value || !device.value) {
                         try {
-                            const timeoutPromise = new Promise((_, reject) =>
-                                setTimeout(() => reject(new Error('超时')), 5000)
-                            );
-                            await Promise.race([initWebGPU(), timeoutPromise]);
+                            const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error('超时')), 5000));
+                            await Promise.race([initWebGPU(), timeoutP]);
                         } catch (e) {
                             console.log('WebGPU 初始化跳过:', e.message);
                         }
                     }
 
-                    try {
-                        await testCPUInt();
-                    } catch (e) {
-                        console.error(e);
-                        cpuInt.score = 0;
-                    }
+                    const wrap = async (fn, state) => {
+                        try { await fn(); } catch (e) { console.error(e); state.score = 0; state.status = '失败'; state.statusClass = 'status-error'; }
+                    };
 
-                    try {
-                        await testCPUFloat();
-                    } catch (e) {
-                        console.error(e);
-                        cpuFloat.score = 0;
-                    }
-
-                    try {
-                        await testMemory();
-                    } catch (e) {
-                        console.error(e);
-                        memory.score = 0;
-                    }
+                    await wrap(testCPUInt, cpuInt);
+                    await wrap(testCPUFloat, cpuFloat);
+                    await wrap(testMemory, memory);
 
                     if (webgpuSupported.value && device.value) {
-                        try {
-                            await testGPUCompute();
-                        } catch (e) {
-                            console.error('GPU Compute:', e);
-                            gpu.score = 0;
-                        }
-
-                        try {
-                            await testGPURender();
-                        } catch (e) {
-                            console.error('GPU Render:', e);
-                            render.score = 0;
-                        }
+                        await wrap(testGPUCompute, gpu);
+                        await wrap(testGPURender, render);
                     }
 
                     calculateOverallScore();
@@ -959,57 +1037,49 @@
                         render: 0.15
                     };
 
-                    let totalScore = 0;
+                    let total = 0;
                     let totalWeight = 0;
+                    const scores = {
+                        cpuInt: cpuInt.score,
+                        cpuFloat: cpuFloat.score,
+                        memory: memory.score,
+                        gpu: gpu.score,
+                        render: render.score
+                    };
 
-                    const scores = { cpuInt: cpuInt.score, cpuFloat: cpuFloat.score, memory: memory.score, gpu: gpu.score, render: render.score };
-
-                    for (const [key, weight] of Object.entries(weights)) {
-                        if (scores[key] !== undefined) {
-                            totalScore += scores[key] * weight;
-                            totalWeight += weight;
+                    for (const [k, w] of Object.entries(weights)) {
+                        if (scores[k] > 0) {
+                            total += scores[k] * w;
+                            totalWeight += w;
                         }
                     }
 
-                    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+                    const final = totalWeight > 0 ? total / totalWeight : 0;
+                    overallScore.value = Math.round(final);
 
-                    overallScore.value = Math.round(finalScore);
-
-                    if (finalScore >= 80) {
-                        scoreGrade.value = 'A';
-                    } else if (finalScore >= 60) {
-                        scoreGrade.value = 'B';
-                    } else if (finalScore >= 40) {
-                        scoreGrade.value = 'C';
-                    } else {
-                        scoreGrade.value = 'D';
-                    }
+                    if (final >= 80) scoreGrade.value = 'A';
+                    else if (final >= 60) scoreGrade.value = 'B';
+                    else if (final >= 40) scoreGrade.value = 'C';
+                    else scoreGrade.value = 'D';
 
                     showOverall.value = true;
                 };
 
-                const scoreClass = ref('score-b');
-
-                onMounted(() => {
-                    updateSystemInfo();
+                const scoreClass = computed(() => {
+                    const s = overallScore.value;
+                    if (s >= 80) return 'score-a';
+                    if (s >= 60) return 'score-b';
+                    if (s >= 40) return 'score-c';
+                    return 'score-d';
                 });
 
+                onMounted(() => { updateSystemInfo(); });
+
                 return {
-                    navigatorGpu,
-                    webgpuError,
-                    systemInfo,
-                    cpuInt,
-                    cpuFloat,
-                    memory,
-                    gpu,
-                    render,
-                    isTesting,
-                    showOverall,
-                    overallScore,
-                    scoreGrade,
-                    scoreClass,
-                    runAllTests,
-                    getScoreClass
+                    navigatorGpu, webgpuError, systemInfo,
+                    cpuInt, cpuFloat, memory, gpu, render,
+                    isTesting, showOverall, overallScore, scoreGrade, scoreClass,
+                    runAllTests
                 };
             }
         }).mount('#app');
