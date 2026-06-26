@@ -396,6 +396,27 @@
             <div class="test-card">
                 <div class="test-header">
                     <span class="test-name">
+                        <svg class="icon"><use href="#i-cpu"/></svg>
+                        CPU 多核性能
+                    </span>
+                    <span class="test-status" :class="multiCore.statusClass">{{ multiCore.status }}</span>
+                </div>
+                <p class="test-description">WebWorker 并行 xorshift32，所有逻辑核心同时跑</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: multiCore.progress + '%' }"></div>
+                </div>
+                <div class="result-display">
+                    <div>
+                        <span class="result-value">{{ multiCore.result }}</span>
+                        <span class="result-unit">M ops/s</span>
+                    </div>
+                    <span class="result-details">{{ multiCore.details }}</span>
+                </div>
+            </div>
+
+            <div class="test-card">
+                <div class="test-header">
+                    <span class="test-name">
                         <svg class="icon"><use href="#i-gpu"/></svg>
                         WebGPU 计算性能
                     </span>
@@ -476,6 +497,7 @@
                 const cpuInt = makeState('xorshift32 异或链');
                 const cpuFloat = makeState('双精度 FMA 链');
                 const memory = makeState('顺序读取 256MB');
+                const multiCore = makeState('WebWorker 并行 xorshift32');
                 const gpu = makeState('矩阵乘法 1024x1024');
                 const render = makeState('2048x2048 像素填充');
 
@@ -753,6 +775,102 @@
                     memory.details = `顺序读取 ${sizeBytes / 1024 / 1024}MB (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
                     // 20 GB/s 为 100 分基准（JS 单线程顺序读的合理上限）
                     memory.score = Math.min(120, 100 * Math.pow(median / 20, 0.75));
+                };
+
+                // ----- CPU 多核（WebWorker 并行）-----
+                // 与 testCPUInt 完全相同的 xorshift32 内核，并行跑在 hardwareConcurrency 个 Worker 上
+                // 用 Blob URL 内联 Worker 脚本，Safari/Chrome/Firefox 都支持
+                const testMultiCore = async () => {
+                    multiCore.status = '测试中...';
+                    multiCore.statusClass = 'status-running';
+                    multiCore.progress = 0;
+
+                    const cores = navigator.hardwareConcurrency || 4;
+                    const targetMs = 1600;
+
+                    const workerSrc = `
+                        self.onmessage = function(e) {
+                            const targetMs = e.data.targetMs;
+                            const innerOps = 4;
+                            const innerLoop = 1024;
+
+                            // 预热
+                            let seed = (0x12345678 ^ e.data.id) | 0;
+                            for (let i = 0; i < 200000; i++) {
+                                seed ^= seed << 13;
+                                seed ^= seed >>> 17;
+                                seed ^= seed << 5;
+                            }
+
+                            seed = (0xdeadbeef + e.data.id) | 0;
+                            let batches = 0;
+                            const start = performance.now();
+                            let elapsed = 0;
+                            while (elapsed < targetMs) {
+                                for (let i = 0; i < innerLoop; i++) {
+                                    seed ^= seed << 13;
+                                    seed ^= seed >>> 17;
+                                    seed ^= seed << 5;
+                                    seed = (seed + 0x9e3779b9) | 0;
+                                }
+                                batches++;
+                                elapsed = performance.now() - start;
+                            }
+                            const totalOps = batches * innerLoop * innerOps;
+                            const mops = totalOps / (elapsed / 1000) / 1e6;
+                            self.postMessage({ mops: mops, sink: seed });
+                        };
+                    `;
+
+                    const blob = new Blob([workerSrc], { type: 'application/javascript' });
+                    const url = URL.createObjectURL(blob);
+
+                    const runs = 5;
+                    const results = [];
+
+                    try {
+                        for (let run = 0; run < runs; run++) {
+                            await yieldUI();
+
+                            const workers = [];
+                            const promises = [];
+                            for (let i = 0; i < cores; i++) {
+                                const w = new Worker(url);
+                                workers.push(w);
+                                promises.push(new Promise((resolve, reject) => {
+                                    w.onmessage = (e) => resolve(e.data.mops);
+                                    w.onerror = (e) => reject(e);
+                                }));
+                            }
+                            // 同时启动所有 worker，尽量让它们并行抢核
+                            for (let i = 0; i < cores; i++) {
+                                workers[i].postMessage({ id: i, targetMs });
+                            }
+                            const perWorker = await Promise.all(promises);
+                            workers.forEach(w => w.terminate());
+
+                            const total = perWorker.reduce((a, b) => a + b, 0);
+                            results.push(total);
+
+                            multiCore.progress = ((run + 1) / runs) * 100;
+                        }
+                    } finally {
+                        URL.revokeObjectURL(url);
+                    }
+
+                    results.sort((a, b) => a - b);
+                    const median = results[Math.floor(results.length / 2)];
+                    const singleMops = parseFloat(cpuInt.result);
+                    const speedup = (singleMops > 0) ? (median / singleMops) : 0;
+                    const efficiency = (speedup / cores) * 100;
+
+                    multiCore.status = '完成';
+                    multiCore.statusClass = 'status-done';
+                    multiCore.progress = 100;
+                    multiCore.result = median.toFixed(0);
+                    multiCore.details = `${cores} 线程并行, 加速比 ${speedup.toFixed(2)}x, 效率 ${efficiency.toFixed(0)}% (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(0)})`;
+                    // 20000 M ops/s 为 100 分基准（约 8 核 @ 2500 Mops/s 满速）
+                    multiCore.score = Math.min(120, 100 * Math.pow(median / 20000, 0.75));
                 };
 
                 // ----- WebGPU 计算（矩阵乘法）-----
@@ -1045,6 +1163,7 @@
                     resetState(cpuInt, 'xorshift32 异或链');
                     resetState(cpuFloat, '双精度 FMA 链');
                     resetState(memory, '顺序读取 256MB');
+                    resetState(multiCore, 'WebWorker 并行 xorshift32');
                     resetState(gpu, '矩阵乘法 1024x1024');
                     resetState(render, '2048x2048 像素填充');
 
@@ -1064,6 +1183,7 @@
                     await wrap(testCPUInt, cpuInt);
                     await wrap(testCPUFloat, cpuFloat);
                     await wrap(testMemory, memory);
+                    await wrap(testMultiCore, multiCore);
 
                     if (webgpuSupported.value && device.value) {
                         await wrap(testGPUCompute, gpu);
@@ -1076,11 +1196,12 @@
 
                 const calculateOverallScore = () => {
                     const weights = {
-                        cpuInt: 0.15,
-                        cpuFloat: 0.20,
+                        cpuInt: 0.10,
+                        cpuFloat: 0.15,
                         memory: 0.15,
-                        gpu: 0.25,
-                        render: 0.25
+                        multiCore: 0.15,
+                        gpu: 0.225,
+                        render: 0.225
                     };
 
                     let total = 0;
@@ -1089,6 +1210,7 @@
                         cpuInt: cpuInt.score,
                         cpuFloat: cpuFloat.score,
                         memory: memory.score,
+                        multiCore: multiCore.score,
                         gpu: gpu.score,
                         render: render.score
                     };
@@ -1126,7 +1248,7 @@
 
                 return {
                     navigatorGpu, webgpuError, systemInfo,
-                    cpuInt, cpuFloat, memory, gpu, render,
+                    cpuInt, cpuFloat, memory, multiCore, gpu, render,
                     isTesting, showOverall, overallScore, scoreGrade, scoreClass,
                     runAllTests
                 };
