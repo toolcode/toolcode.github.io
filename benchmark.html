@@ -260,6 +260,23 @@
         .summary-score.low { color: #ff8844; }
         .summary-score.bad { color: #ff5252; }
 
+        .score-note {
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: rgba(0, 217, 255, 0.06);
+            border-left: 3px solid #00d9ff;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .score-note strong {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
         @media (max-width: 600px) {
             .summary-row {
                 grid-template-columns: 1fr auto 50px;
@@ -547,6 +564,13 @@
                         <span class="summary-value">{{ item.value }}<span class="unit">{{ item.unit }}</span></span>
                         <span class="summary-score" :class="item.scoreClass">{{ item.scoreText }}</span>
                     </div>
+                </div>
+
+                <div class="score-note">
+                    <strong>说明：</strong>本评分针对<strong>网页浏览流畅度</strong>进行加权，重点考察日常上网时影响最直观的能力——
+                    CPU 单核响应（JS 解析与执行）、内存延迟（DOM / 对象访问）以及 GPU 渲染（页面滚动、动画、合成）权重较高；
+                    内存带宽、多核吞吐与 GPU 通用计算权重较低，因为它们在普通网页场景下很少成为瓶颈。
+                    因此本分数<strong>不代表游戏、3D 建模、科学计算或视频编码等专业负载的性能</strong>，仅反映"浏览网页是否顺滑"这一维度。
                 </div>
             </div>
         </div>
