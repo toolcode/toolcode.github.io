@@ -618,8 +618,8 @@
                     cpuInt.progress = 100;
                     cpuInt.result = median.toFixed(1);
                     cpuInt.details = `xorshift32 (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
-                    // 2500 M ops/s 为 100 分基准，幂指数 0.75 避免顶端被压缩，上限 120
-                    cpuInt.score = Math.min(120, 100 * Math.pow(median / 2500, 0.75));
+                    // 1200 M ops/s 为 100 分基准（2026 主流 CPU 单核 JS 串行链），幂指数 0.75，上限 120
+                    cpuInt.score = Math.min(120, 100 * Math.pow(median / 1200, 0.75));
                 };
 
                 // ----- CPU 浮点运算 -----
@@ -684,7 +684,7 @@
                     cpuFloat.progress = 100;
                     cpuFloat.result = median.toFixed(0);
                     cpuFloat.details = `4 路 FMA (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(0)})`;
-                    // 3000 MFLOPS 为 100 分基准
+                    // 3000 MFLOPS 为 100 分基准（2026 主流 CPU 单核 4 路 FMA）
                     cpuFloat.score = Math.min(120, 100 * Math.pow(median / 3000, 0.75));
                 };
 
@@ -751,11 +751,13 @@
                     memory.progress = 100;
                     memory.result = median.toFixed(1);
                     memory.details = `顺序读取 ${sizeBytes / 1024 / 1024}MB (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
-                    // 20 GB/s 为 100 分基准（JS 单线程顺序读的合理上限）
-                    memory.score = Math.min(120, 100 * Math.pow(median / 20, 0.75));
+                    // 22 GB/s 为 100 分基准（2026 DDR5 平台单线程顺序读）
+                    memory.score = Math.min(120, 100 * Math.pow(median / 22, 0.75));
                 };
 
                 // ----- WebGPU 计算（矩阵乘法）-----
+                // Blocked GEMM: workgroup 8x8 = 64 线程, 每线程算 4x4 = 16 个输出, 处理 32x32 输出块
+                // 算术强度从 0.5 FMA/SMEM-read 提升到 2.0, 显著降低 SMEM 带宽压力
                 const testGPUCompute = async () => {
                     if (!webgpuSupported.value || !device.value) {
                         gpu.status = '失败';
@@ -770,41 +772,93 @@
                     gpu.statusClass = 'status-running';
                     gpu.progress = 0;
 
-                    const matrixSize = 1024;
-                    const workgroupSize = 16;
-                    const dispatchCount = matrixSize / workgroupSize; // 64
+                    const matrixSize = 2048;
+                    const blockSize = 64;       // workgroup 处理 64x64 输出
+                    const tileSize = 16;        // K 维 tile 大小
+                    const dispatchCount = matrixSize / blockSize; // 32
 
                     const shaderCode = `
                         @group(0) @binding(0) var<storage, read> inputA : array<f32>;
                         @group(0) @binding(1) var<storage, read> inputB : array<f32>;
                         @group(0) @binding(2) var<storage, read_write> output : array<f32>;
 
-                        const TILE : u32 = ${workgroupSize}u;
-                        var<workgroup> tileA : array<array<f32, ${workgroupSize}>, ${workgroupSize}>;
-                        var<workgroup> tileB : array<array<f32, ${workgroupSize}>, ${workgroupSize}>;
+                        const N : u32 = ${matrixSize}u;
+                        const BLOCK : u32 = ${blockSize}u;      // 64
+                        const TILE : u32 = ${tileSize}u;        // K 维 = 16
+                        const SA : u32 = ${tileSize + 1}u;      // tileA 行宽 17 (padding)
+                        const SB : u32 = ${blockSize + 1}u;     // tileB 行宽 65 (padding)
 
-                        @compute @workgroup_size(${workgroupSize}, ${workgroupSize})
-                        fn main(@builtin(global_invocation_id) gid : vec3<u32>,
+                        var<workgroup> tileA : array<f32, BLOCK * SA>;  // 64 x 17
+                        var<workgroup> tileB : array<f32, TILE * SB>;   // 16 x 65
+
+                        @compute @workgroup_size(16, 16)
+                        fn main(@builtin(workgroup_id) wid : vec3<u32>,
                                 @builtin(local_invocation_id) lid : vec3<u32>) {
-                            let size : u32 = ${matrixSize}u;
-                            let row = gid.y;
-                            let col = gid.x;
-                            let lx = lid.x;
-                            let ly = lid.y;
+                            let wgRow = wid.y * BLOCK;
+                            let wgCol = wid.x * BLOCK;
+                            let tRow = lid.y * 4u;
+                            let tCol = lid.x * 4u;
+                            let threadId = lid.y * 16u + lid.x;  // 0..255
 
-                            var sum : f32 = 0.0;
-                            let numTiles = size / TILE;
-                            for (var t : u32 = 0u; t < numTiles; t = t + 1u) {
-                                tileA[ly][lx] = inputA[row * size + (t * TILE + lx)];
-                                tileB[ly][lx] = inputB[(t * TILE + ly) * size + col];
+                            var sum : array<f32, 16>;
+                            for (var i = 0u; i < 16u; i = i + 1u) {
+                                sum[i] = 0.0;
+                            }
+
+                            let numTiles = N / TILE;
+                            for (var t = 0u; t < numTiles; t = t + 1u) {
+                                // 协作加载 A: 64x16=1024, 256 线程各 4 个
+                                for (var i = 0u; i < 4u; i = i + 1u) {
+                                    let idx = threadId * 4u + i;
+                                    let lr = idx / 16u;   // 0..63
+                                    let lc = idx % 16u;   // 0..15
+                                    tileA[lr * SA + lc] = inputA[(wgRow + lr) * N + (t * TILE + lc)];
+                                }
+                                // 协作加载 B: 16x64=1024, 256 线程各 4 个
+                                for (var i = 0u; i < 4u; i = i + 1u) {
+                                    let idx = threadId * 4u + i;
+                                    let br = idx / 64u;   // 0..15
+                                    let bc = idx % 64u;   // 0..63
+                                    tileB[br * SB + bc] = inputB[(t * TILE + br) * N + (wgCol + bc)];
+                                }
                                 workgroupBarrier();
 
-                                for (var k : u32 = 0u; k < TILE; k = k + 1u) {
-                                    sum = sum + tileA[ly][k] * tileB[k][lx];
+                                // 4x4 输出: 每个 K 步做 16 个 FMA, 只需读 8 个 SMEM 值
+                                for (var k = 0u; k < TILE; k = k + 1u) {
+                                    let a0 = tileA[(tRow + 0u) * SA + k];
+                                    let a1 = tileA[(tRow + 1u) * SA + k];
+                                    let a2 = tileA[(tRow + 2u) * SA + k];
+                                    let a3 = tileA[(tRow + 3u) * SA + k];
+                                    let b0 = tileB[k * SB + tCol + 0u];
+                                    let b1 = tileB[k * SB + tCol + 1u];
+                                    let b2 = tileB[k * SB + tCol + 2u];
+                                    let b3 = tileB[k * SB + tCol + 3u];
+
+                                    sum[0]  = fma(a0, b0, sum[0]);
+                                    sum[1]  = fma(a0, b1, sum[1]);
+                                    sum[2]  = fma(a0, b2, sum[2]);
+                                    sum[3]  = fma(a0, b3, sum[3]);
+                                    sum[4]  = fma(a1, b0, sum[4]);
+                                    sum[5]  = fma(a1, b1, sum[5]);
+                                    sum[6]  = fma(a1, b2, sum[6]);
+                                    sum[7]  = fma(a1, b3, sum[7]);
+                                    sum[8]  = fma(a2, b0, sum[8]);
+                                    sum[9]  = fma(a2, b1, sum[9]);
+                                    sum[10] = fma(a2, b2, sum[10]);
+                                    sum[11] = fma(a2, b3, sum[11]);
+                                    sum[12] = fma(a3, b0, sum[12]);
+                                    sum[13] = fma(a3, b1, sum[13]);
+                                    sum[14] = fma(a3, b2, sum[14]);
+                                    sum[15] = fma(a3, b3, sum[15]);
                                 }
                                 workgroupBarrier();
                             }
-                            output[row * size + col] = sum;
+
+                            for (var r = 0u; r < 4u; r = r + 1u) {
+                                for (var c = 0u; c < 4u; c = c + 1u) {
+                                    output[(wgRow + tRow + r) * N + (wgCol + tCol + c)] = sum[r * 4u + c];
+                                }
+                            }
                         }
                     `;
 
@@ -847,21 +901,24 @@
                         ]
                     });
 
-                    const dispatchOnce = () => {
+                    // 单次 compute pass 录制多次 dispatch, 大幅降低 CPU launch 开销
+                    const recordBatch = (count) => {
                         const enc = device.value.createCommandEncoder();
                         const pass = enc.beginComputePass();
                         pass.setPipeline(pipeline);
                         pass.setBindGroup(0, bindGroup);
-                        pass.dispatchWorkgroups(dispatchCount, dispatchCount);
+                        for (let i = 0; i < count; i++) {
+                            pass.dispatchWorkgroups(dispatchCount, dispatchCount);
+                        }
                         pass.end();
                         device.value.queue.submit([enc.finish()]);
                     };
 
                     // 预热（同时让 GPU 进入高频）
-                    for (let i = 0; i < 5; i++) dispatchOnce();
+                    recordBatch(5);
                     await device.value.queue.onSubmittedWorkDone();
 
-                    const iterations = 40;
+                    const iterations = 20;
                     const runs = 5;
                     const times = [];
 
@@ -869,7 +926,7 @@
                         await yieldUI();
 
                         const start = performance.now();
-                        for (let i = 0; i < iterations; i++) dispatchOnce();
+                        recordBatch(iterations);
                         await device.value.queue.onSubmittedWorkDone();
                         const elapsed = performance.now() - start;
                         times.push(elapsed);
@@ -892,8 +949,8 @@
                     gpu.progress = 100;
                     gpu.result = gflops.toFixed(1);
                     gpu.details = `${matrixSize}x${matrixSize} 矩阵 x${iterations} 次 (${runs} 次中位数)`;
-                    // 8000 GFLOPS 为 100 分基准（中端独显水平）
-                    gpu.score = Math.min(120, 100 * Math.pow(gflops / 8000, 0.75));
+                    // 9000 GFLOPS 为 100 分基准（2026 主流独显 WebGPU 计算水平，约 RTX 5070 级）
+                    gpu.score = Math.min(120, 100 * Math.pow(gflops / 9000, 0.75));
                 };
 
                 // ----- WebGPU 渲染 -----
@@ -1025,8 +1082,8 @@
                     render.progress = 100;
                     render.result = median.toFixed(1);
                     render.details = `${size}x${size} x${totalDraws} draw, blend on (${runs} 次中位数)`;
-                    // 120 GPix/s 为 100 分基准
-                    render.score = Math.min(120, 100 * Math.pow(median / 120, 0.75));
+                    // 55 GPix/s 为 100 分基准（2026 主流独显重着色 fragment 吞吐）
+                    render.score = Math.min(120, 100 * Math.pow(median / 55, 0.75));
                 };
 
                 const resetState = (s, details) => {
