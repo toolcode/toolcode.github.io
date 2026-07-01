@@ -922,16 +922,10 @@
                     memory.status = '完成';
                     memory.statusClass = 'status-done';
                     memory.progress = 100;
-<<<<<<< HEAD
-                    memory.result = median.toFixed(1);
-                    memory.details = `顺序读取 ${sizeBytes / 1024 / 1024}MB (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(1)})`;
-                    // 22 GB/s 为 100 分基准（2026 DDR5 平台单线程顺序读）
-                    memory.score = Math.min(120, 100 * Math.pow(median / 22, 0.75));
-=======
                     memory.result = dramMedian.toFixed(1);
                     memory.details = detailsStr;
-                    // 评分仍基于 DRAM：20 GB/s 为 100 分
-                    memory.score = Math.min(120, 100 * Math.pow(dramMedian / 20, 0.75));
+                    // 评分基于 DRAM：22 GB/s 为 100 分（2026 DDR5 平台）
+                    memory.score = Math.min(120, 100 * Math.pow(dramMedian / 22, 0.75));
                 };
 
                 // ----- 内存延迟（pointer chase）-----
@@ -1118,7 +1112,6 @@
                     multiCore.details = `${cores} 线程并行, 加速比 ${speedup.toFixed(2)}x, 效率 ${efficiency.toFixed(0)}% (${runs} 次中位数, 最佳 ${Math.max(...results).toFixed(0)})`;
                     // 20000 M ops/s 为 100 分基准（约 8 核 @ 2500 Mops/s 满速）
                     multiCore.score = Math.min(120, 100 * Math.pow(median / 20000, 0.75));
->>>>>>> c1849c2c5627767ff0a33e69b35159a047d14c14
                 };
 
                 // ----- WebGPU 计算（矩阵乘法）-----
